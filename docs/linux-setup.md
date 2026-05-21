@@ -24,6 +24,13 @@ LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
 
 For `secutrace.co.kr`, point the DNS A record to the server public IP and open the selected lab port only to trusted source IPs.
 
+For HTTPS on `80` and `443`, put Nginx in front of the lab runtime:
+
+```bash
+sudo DOMAIN=secutrace.co.kr ADMIN_EMAIL=admin@secutrace.co.kr ./scripts/setup-nginx-ssl.sh
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
 ## Install Common Prerequisites
 
 Ubuntu/Debian example:
