@@ -20,12 +20,6 @@ Custom install directory:
 curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test/install.sh | INSTALL_DIR="$HOME/webshell-detection-lab" bash
 ```
 
-Skip package installation:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test/install.sh | SKIP_PACKAGES=1 bash
-```
-
 ## Required Runtime Packages
 
 The installer attempts to install common packages on `apt`, `dnf`, or `yum` systems: `git`, `curl`, `nodejs`, `npm`, `php-cli`, Java 17, and `maven`.
@@ -42,7 +36,7 @@ cd /opt/webshell-detection-lab
 ./scripts/switch-server.sh aspnet
 ```
 
-Default URL:
+Default direct URL:
 
 ```text
 http://secutrace.co.kr:8080/
@@ -70,58 +64,82 @@ Create or update DNS:
 secutrace.co.kr    A    <your-linux-server-public-ip>
 ```
 
-Open only the lab port from trusted source IPs. Ubuntu UFW example:
+## HTTPS On Ports 80 And 443
+
+Recommended layout:
+
+```text
+Internet -> https://secutrace.co.kr:443 -> Nginx -> http://127.0.0.1:8080 -> active lab runtime
+```
+
+This keeps the language runtime switchable while Nginx owns ports `80` and `443`.
+
+1. Confirm DNS points to the server:
 
 ```bash
-sudo ufw allow from <trusted-public-ip>/32 to any port 8080 proto tcp
+dig +short secutrace.co.kr
+```
+
+2. Open firewall ports:
+
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw deny 8080/tcp
 sudo ufw status numbered
 ```
 
-Cloud firewall/security group example:
+If the lab must only be reachable from trusted testers, restrict `443` to trusted IPs:
 
-```text
-Inbound TCP 8080: allow only your office/VPN/tester public IP ranges
-Inbound TCP 22: allow only admin IP ranges
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow from <trusted-public-ip>/32 to any port 443 proto tcp
+sudo ufw deny 443/tcp
+sudo ufw deny 8080/tcp
 ```
 
-Then start the active runtime:
+Port `80` must be reachable during Let's Encrypt HTTP-01 validation and can remain open for HTTP-to-HTTPS redirects.
+
+3. Configure Nginx and issue the certificate:
 
 ```bash
 cd /opt/webshell-detection-lab
-LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
+sudo DOMAIN=secutrace.co.kr ADMIN_EMAIL=admin@secutrace.co.kr ./scripts/setup-nginx-ssl.sh
 ```
 
-Open:
-
-```text
-http://secutrace.co.kr:8080/
-```
-
-Optional Nginx reverse proxy for standard HTTP port:
-
-```nginx
-server {
-    listen 80;
-    server_name secutrace.co.kr;
-
-    location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-With this Nginx option, keep the lab process bound to localhost:
+If you do not want to provide an email:
 
 ```bash
+sudo DOMAIN=secutrace.co.kr ./scripts/setup-nginx-ssl.sh
+```
+
+4. Start the active runtime behind Nginx:
+
+```bash
+cd /opt/webshell-detection-lab
 LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
 ```
 
-Then use firewall rules on ports `80` or `443`.
+5. Open:
+
+```text
+https://secutrace.co.kr/
+```
+
+Switching runtimes keeps the same HTTPS URL:
+
+```bash
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh php
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh jsp
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh aspnet
+```
+
+Certificate renewal is handled by Certbot's system timer on most Linux distributions. Check it with:
+
+```bash
+systemctl list-timers | grep certbot
+sudo certbot renew --dry-run
+```
 
 ## Configure The Agent
 
@@ -141,7 +159,7 @@ If your Agent follows symlinks, monitor `runtime/current/uploads`. If it does no
 ## Upload And Correlate
 
 1. Start a runtime.
-2. Open `http://secutrace.co.kr:8080/`.
+2. Open `https://secutrace.co.kr/`.
 3. Upload your own test sample.
 4. Check Agent detection output.
 5. Compare with the lab upload log:
