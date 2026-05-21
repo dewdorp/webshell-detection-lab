@@ -7,7 +7,7 @@ cd webshell-detection-lab
 ./scripts/switch-server.sh php
 ```
 
-The switch script runs `php -S 127.0.0.1:8080 index.php` inside `servers/php-apache`.
+The switch script runs `php -S 0.0.0.0:8080 index.php` inside `servers/php-apache` by default.
 
 ## Apache-Oriented Deployment
 
