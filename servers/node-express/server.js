@@ -6,6 +6,7 @@ const multer = require('multer');
 
 const runtime = 'node';
 const port = Number(process.env.LAB_PORT || process.env.PORT || 8080);
+const host = process.env.LAB_HOST || '0.0.0.0';
 const serverDir = __dirname;
 const rootDir = path.resolve(serverDir, '..', '..');
 const uploadDir = path.join(serverDir, 'uploads');
@@ -44,4 +45,4 @@ app.get('/files', (_req, res) => {
   });
   res.json({ runtime, files });
 });
-app.listen(port, '127.0.0.1', () => console.log(`Node lab server listening on http://127.0.0.1:${port}`));
+app.listen(port, host, () => console.log(`Node lab server listening on http://${host}:${port}`));
