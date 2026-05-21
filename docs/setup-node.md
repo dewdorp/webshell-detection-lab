@@ -14,7 +14,7 @@ The switch script runs `npm install` inside `servers/node-express` if `node_modu
 ```bash
 cd webshell-detection-lab/servers/node-express
 npm install
-LAB_PORT=8080 node server.js
+LAB_HOST=0.0.0.0 LAB_PORT=8080 node server.js
 ```
 
 ## Paths
