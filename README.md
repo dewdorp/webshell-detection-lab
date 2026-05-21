@@ -56,6 +56,13 @@ curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test
 
 Detailed instructions are in `docs/external-server-install.md`.
 
+Additional documentation:
+
+```text
+docs/technology-stack.md
+docs/webshell-detection-poc.md
+```
+
 ## Network Exposure
 
 The default bind host is `0.0.0.0` so the lab can be reached externally when firewall rules permit it. Use firewall or cloud security group rules to restrict access to trusted IP ranges.
