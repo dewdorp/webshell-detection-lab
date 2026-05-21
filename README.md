@@ -22,7 +22,7 @@ chmod +x scripts/*.sh
 Open:
 
 ```text
-http://localhost:8080/
+http://secutrace.co.kr:8080/
 ```
 
 Switch runtimes:
@@ -48,16 +48,20 @@ Reset uploads and logs:
 
 ## External Server Install
 
-After this project is pushed to GitHub as `dewdorp/webshell-detection-lab`, an external Linux server can install it with:
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test/install.sh | bash
 ```
 
-Detailed instructions are in:
+Detailed instructions are in `docs/external-server-install.md`.
 
-```text
-docs/external-server-install.md
+## Network Exposure
+
+The default bind host is `0.0.0.0` so the lab can be reached externally when firewall rules permit it. Use firewall or cloud security group rules to restrict access to trusted IP ranges.
+
+For `secutrace.co.kr`, point the DNS A record to the Linux server public IP and start a runtime:
+
+```bash
+LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
 ```
 
 ## Routes
@@ -82,11 +86,4 @@ servers/jsp-tomcat/uploads
 servers/aspnet-core/uploads
 ```
 
-When supported by the host OS, `scripts/switch-server.sh` also updates:
-
-```text
-runtime/current -> servers/<active-runtime>
-runtime/current/uploads
-```
-
-If your Agent does not follow symlinks, configure it with the concrete path printed by `switch-server.sh`.
+If your Agent follows symlinks, monitor `runtime/current/uploads`. If it does not, configure it with the concrete path printed by `switch-server.sh`.
