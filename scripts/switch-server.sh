@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME="${1:-}"
 LAB_PORT="${LAB_PORT:-8080}"
+LAB_HOST="${LAB_HOST:-0.0.0.0}"
 PID_DIR="$ROOT_DIR/runtime/pids"
 ACTIVE_FILE="$ROOT_DIR/runtime/active-server.json"
 CURRENT_LINK="$ROOT_DIR/runtime/current"
@@ -26,6 +27,7 @@ write_active_file() {
 {
   "runtime": "$runtime",
   "pid": $pid,
+  "host": "$LAB_HOST",
   "port": $LAB_PORT,
   "serverDir": "$server_dir",
   "uploadPath": "$upload_dir",
@@ -53,7 +55,8 @@ start_server() {
   rm -f "$CURRENT_LINK"
   ln -s "$server_dir" "$CURRENT_LINK" 2>/dev/null || true
   write_active_file "$runtime" "$pid" "$server_dir" "$upload_dir"
-  printf '%s server started on http://localhost:%s with PID %s\n' "$runtime" "$LAB_PORT" "$pid"
+  printf '%s server started on http://%s:%s with PID %s\n' "$runtime" "$LAB_HOST" "$LAB_PORT" "$pid"
+  printf 'External URL example: http://secutrace.co.kr:%s\n' "$LAB_PORT"
   printf 'Agent watch path: %s\n' "$upload_dir"
   if [ -L "$CURRENT_LINK" ]; then printf 'Stable symlink path: %s/uploads\n' "$CURRENT_LINK"; fi
 }
@@ -74,16 +77,16 @@ case "$RUNTIME" in
     ;;
   php)
     require_command php "Install PHP or configure Apache/PHP separately."
-    start_server "php" "$ROOT_DIR/servers/php-apache" php -S "127.0.0.1:$LAB_PORT" index.php
+    start_server "php" "$ROOT_DIR/servers/php-apache" php -S "$LAB_HOST:$LAB_PORT" index.php
     ;;
   jsp)
     require_command java "Install a Java runtime."
     require_command mvn "Install Maven."
-    start_server "jsp" "$ROOT_DIR/servers/jsp-tomcat" mvn -q compile exec:java -Dexec.mainClass=lab.EmbeddedTomcatServer -Dlab.port="$LAB_PORT"
+    start_server "jsp" "$ROOT_DIR/servers/jsp-tomcat" mvn -q compile exec:java -Dexec.mainClass=lab.EmbeddedTomcatServer -Dlab.port="$LAB_PORT" -Dlab.host="$LAB_HOST"
     ;;
   aspnet)
     require_command dotnet "Install the .NET SDK."
-    start_server "aspnet" "$ROOT_DIR/servers/aspnet-core" dotnet run --urls "http://127.0.0.1:$LAB_PORT"
+    start_server "aspnet" "$ROOT_DIR/servers/aspnet-core" dotnet run --urls "http://$LAB_HOST:$LAB_PORT"
     ;;
   *) usage; exit 1 ;;
 esac
