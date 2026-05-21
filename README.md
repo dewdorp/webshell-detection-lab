@@ -48,6 +48,8 @@ Reset uploads and logs:
 
 ## External Server Install
 
+After this project is pushed to GitHub as `dewdorp/webshell-detection-lab`, an external Linux server can install it with:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test/install.sh | bash
 ```
@@ -62,6 +64,19 @@ For `secutrace.co.kr`, point the DNS A record to the Linux server public IP and 
 
 ```bash
 LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+For HTTPS on ports `80` and `443`, use Nginx and Certbot:
+
+```bash
+sudo DOMAIN=secutrace.co.kr ADMIN_EMAIL=admin@secutrace.co.kr ./scripts/setup-nginx-ssl.sh
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+Then open:
+
+```text
+https://secutrace.co.kr/
 ```
 
 ## Routes
@@ -86,4 +101,11 @@ servers/jsp-tomcat/uploads
 servers/aspnet-core/uploads
 ```
 
-If your Agent follows symlinks, monitor `runtime/current/uploads`. If it does not, configure it with the concrete path printed by `switch-server.sh`.
+When supported by the host OS, `scripts/switch-server.sh` also updates:
+
+```text
+runtime/current -> servers/<active-runtime>
+runtime/current/uploads
+```
+
+If your Agent does not follow symlinks, configure it with the concrete path printed by `switch-server.sh`.
