@@ -16,6 +16,14 @@ The default port is `8080`. Override it with:
 LAB_PORT=9090 ./scripts/switch-server.sh node
 ```
 
+The default host bind is `0.0.0.0`, which allows external access when firewall rules permit it. Override it with:
+
+```bash
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+For `secutrace.co.kr`, point the DNS A record to the server public IP and open the selected lab port only to trusted source IPs.
+
 ## Install Common Prerequisites
 
 Ubuntu/Debian example:
