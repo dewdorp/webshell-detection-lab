@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Webshell Detection Lab</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">File-system Agent PoC</p>
+          <h1>Webshell Detection Lab</h1>
+        </div>
+        <div class="runtime-pill" id="runtimeName">runtime</div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Upload Target</h2>
+          <p id="watchPath">Loading active upload path...</p>
+        </div>
+        <form id="uploadForm" class="upload-form">
+          <input id="fileInput" name="file" type="file" required />
+          <button type="submit">Upload</button>
+        </form>
+        <pre id="uploadResult" class="result-box">No uploads yet.</pre>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Uploaded Files</h2>
+          <button id="refreshFiles" type="button">Refresh</button>
+        </div>
+        <div id="fileList" class="file-list"></div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
