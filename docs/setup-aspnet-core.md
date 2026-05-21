@@ -10,7 +10,7 @@ cd webshell-detection-lab
 The switch script runs:
 
 ```bash
-dotnet run --urls http://127.0.0.1:8080
+dotnet run --urls http://0.0.0.0:8080
 ```
 
 inside `servers/aspnet-core`.
@@ -19,7 +19,7 @@ inside `servers/aspnet-core`.
 
 ```bash
 cd webshell-detection-lab/servers/aspnet-core
-dotnet run --urls http://127.0.0.1:8080
+dotnet run --urls http://0.0.0.0:8080
 ```
 
 ## Paths
