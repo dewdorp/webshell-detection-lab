@@ -28,21 +28,9 @@ curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test
 
 ## Required Runtime Packages
 
-The installer attempts to install common packages on `apt`, `dnf`, or `yum` systems:
+The installer attempts to install common packages on `apt`, `dnf`, or `yum` systems: `git`, `curl`, `nodejs`, `npm`, `php-cli`, Java 17, and `maven`.
 
-- `git`
-- `curl`
-- `nodejs`
-- `npm`
-- `php-cli`
-- `openjdk-17-jdk` or `java-17-openjdk-devel`
-- `maven`
-
-.NET SDK installation varies by Linux distribution. Install it from Microsoft documentation:
-
-```text
-https://learn.microsoft.com/dotnet/core/install/linux
-```
+.NET SDK installation varies by Linux distribution. Install it from Microsoft's Linux documentation.
 
 ## Start A Runtime
 
@@ -57,7 +45,7 @@ cd /opt/webshell-detection-lab
 Default URL:
 
 ```text
-http://localhost:8080/
+http://secutrace.co.kr:8080/
 ```
 
 Use another port:
@@ -65,6 +53,75 @@ Use another port:
 ```bash
 LAB_PORT=9090 ./scripts/switch-server.sh php
 ```
+
+Bind to a specific interface:
+
+```bash
+LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+The default `LAB_HOST` is `0.0.0.0`, so the lab server listens on all interfaces. Restrict access with your server firewall, cloud security group, VPN, or reverse proxy rules.
+
+## Domain Setup For secutrace.co.kr
+
+Create or update DNS:
+
+```text
+secutrace.co.kr    A    <your-linux-server-public-ip>
+```
+
+Open only the lab port from trusted source IPs. Ubuntu UFW example:
+
+```bash
+sudo ufw allow from <trusted-public-ip>/32 to any port 8080 proto tcp
+sudo ufw deny 8080/tcp
+sudo ufw status numbered
+```
+
+Cloud firewall/security group example:
+
+```text
+Inbound TCP 8080: allow only your office/VPN/tester public IP ranges
+Inbound TCP 22: allow only admin IP ranges
+```
+
+Then start the active runtime:
+
+```bash
+cd /opt/webshell-detection-lab
+LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+Open:
+
+```text
+http://secutrace.co.kr:8080/
+```
+
+Optional Nginx reverse proxy for standard HTTP port:
+
+```nginx
+server {
+    listen 80;
+    server_name secutrace.co.kr;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+With this Nginx option, keep the lab process bound to localhost:
+
+```bash
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+Then use firewall rules on ports `80` or `443`.
 
 ## Configure The Agent
 
@@ -77,18 +134,14 @@ Concrete upload paths:
 /opt/webshell-detection-lab/servers/aspnet-core/uploads
 ```
 
-The switch script also updates:
-
-```text
-/opt/webshell-detection-lab/runtime/current/uploads
-```
+The switch script also updates `/opt/webshell-detection-lab/runtime/current/uploads`.
 
 If your Agent follows symlinks, monitor `runtime/current/uploads`. If it does not, monitor the concrete path printed by `switch-server.sh`.
 
 ## Upload And Correlate
 
 1. Start a runtime.
-2. Open `http://localhost:8080/`.
+2. Open `http://secutrace.co.kr:8080/`.
 3. Upload your own test sample.
 4. Check Agent detection output.
 5. Compare with the lab upload log:
