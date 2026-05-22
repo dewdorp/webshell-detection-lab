@@ -29,7 +29,18 @@ require_file "scripts/upload-permissions.sh"
 require_contains "scripts/upload-permissions.sh" "LAB_UPLOAD_EXECUTABLE" "the executable upload toggle"
 require_contains "scripts/upload-permissions.sh" "chmod 0775" "0775 permission application"
 
-require_contains "scripts/switch-server.sh" "upload-permissions.sh" "the shared upload permission helper"
+require_file "scripts/setup-upload-exec-handler.sh"
+require_contains "scripts/setup-upload-exec-handler.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
+require_contains "scripts/setup-upload-exec-handler.sh" "configure_php" "PHP handler setup"
+require_contains "scripts/setup-upload-exec-handler.sh" "configure_node" "Node CGI handler setup"
+require_contains "scripts/setup-upload-exec-handler.sh" "configure_jsp" "JSP Tomcat handler setup"
+require_contains "scripts/setup-upload-exec-handler.sh" "disable_apache_exec_sites" "previous Apache handler cleanup"
+require_contains "scripts/setup-upload-exec-handler.sh" "disable_tomcat_exec_context" "previous Tomcat handler cleanup"
+require_contains "scripts/setup-upload-exec-handler.sh" "LAB_EXEC_HANDLER_PORT" "separate handler port support"
+
+require_contains "scripts/switch-server.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
+require_contains "scripts/switch-server.sh" "LAB_UPLOAD_EXECUTABLE=1" "automatic executable permission enablement"
+require_contains "scripts/switch-server.sh" "setup-upload-exec-handler.sh" "automatic handler setup script"
 require_contains "scripts/switch-server.sh" "prepare-dir" "upload directory preparation"
 require_contains "scripts/reset-uploads.sh" "prepare-dir" "upload directory preparation after reset"
 
@@ -46,6 +57,10 @@ require_contains "servers/jsp-tomcat/src/main/java/lab/UploadPermissions.java" "
 
 require_contains "servers/aspnet-core/Program.cs" "LAB_UPLOAD_EXECUTABLE" "the executable upload toggle"
 require_contains "servers/aspnet-core/Program.cs" "File.SetUnixFileMode(path" "uploaded file chmod"
+
+require_file "docs/automatic-upload-exec-handlers.md"
+require_contains "docs/automatic-upload-exec-handlers.md" "LAB_AUTO_EXEC_HANDLER=1" "automatic handler guide"
+require_contains "README.md" "LAB_AUTO_EXEC_HANDLER=1" "README automatic handler usage"
 
 if [ "$failures" -gt 0 ]; then
   printf '\nUpload executable config check failed with %s issue(s).\n' "$failures" >&2
