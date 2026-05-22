@@ -9,6 +9,18 @@ PID_DIR="$ROOT_DIR/runtime/pids"
 ACTIVE_FILE="$ROOT_DIR/runtime/active-server.json"
 CURRENT_LINK="$ROOT_DIR/runtime/current"
 UPLOAD_PERMISSIONS_SCRIPT="$ROOT_DIR/scripts/upload-permissions.sh"
+UPLOAD_EXEC_HANDLER_SCRIPT="$ROOT_DIR/scripts/setup-upload-exec-handler.sh"
+
+upload_exec_handler_enabled() {
+  case "${LAB_AUTO_EXEC_HANDLER:-0}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if upload_exec_handler_enabled && [ -z "${LAB_UPLOAD_EXECUTABLE+x}" ]; then
+  export LAB_UPLOAD_EXECUTABLE=1
+fi
 
 usage() { printf 'Usage: %s node|php|jsp|aspnet\n' "$0"; }
 
@@ -26,6 +38,13 @@ prepare_upload_dir() {
   bash "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$upload_dir"
 }
 
+maybe_setup_upload_exec_handler() {
+  local runtime="$1"
+  if upload_exec_handler_enabled; then
+    bash "$UPLOAD_EXEC_HANDLER_SCRIPT" "$runtime"
+  fi
+}
+
 write_active_file() {
   local runtime="$1" pid="$2" server_dir="$3" upload_dir="$4" started_at
   started_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -38,6 +57,7 @@ write_active_file() {
   "serverDir": "$server_dir",
   "uploadPath": "$upload_dir",
   "uploadExecutable": "${LAB_UPLOAD_EXECUTABLE:-0}",
+  "uploadExecHandler": "${LAB_AUTO_EXEC_HANDLER:-0}",
   "startedAt": "$started_at"
 }
 JSON
@@ -52,6 +72,7 @@ start_server() {
   local pid_file="$PID_DIR/$runtime.pid"
   mkdir -p "$PID_DIR" "$upload_dir" "$log_dir"
   prepare_upload_dir "$upload_dir"
+  maybe_setup_upload_exec_handler "$runtime"
   (cd "$server_dir" && "$@" > "$log_dir/server.out.log" 2> "$log_dir/server.err.log" & echo $! > "$pid_file")
   local pid
   pid="$(cat "$pid_file")"
@@ -67,6 +88,7 @@ start_server() {
   printf 'External URL example: http://secutrace.co.kr:%s\n' "$LAB_PORT"
   printf 'Agent watch path: %s\n' "$upload_dir"
   if [ "${LAB_UPLOAD_EXECUTABLE:-0}" != "0" ]; then printf 'Executable upload permissions: enabled via LAB_UPLOAD_EXECUTABLE=%s\n' "${LAB_UPLOAD_EXECUTABLE:-0}"; fi
+  if upload_exec_handler_enabled; then printf 'Automatic upload execution handler: enabled via LAB_AUTO_EXEC_HANDLER=%s\n' "${LAB_AUTO_EXEC_HANDLER:-0}"; fi
   if [ -L "$CURRENT_LINK" ]; then printf 'Stable symlink path: %s/uploads\n' "$CURRENT_LINK"; fi
 }
 
