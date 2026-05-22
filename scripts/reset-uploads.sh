@@ -13,7 +13,7 @@ for runtime_dir in \
   mkdir -p "$runtime_dir/uploads" "$runtime_dir/logs"
   find "$runtime_dir/uploads" -mindepth 1 -maxdepth 1 -type f -delete
   find "$runtime_dir/logs" -mindepth 1 -maxdepth 1 -type f -delete
-  "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$runtime_dir/uploads"
+  bash "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$runtime_dir/uploads"
 done
 
 rm -f "$ROOT_DIR/runtime/active-server.json" "$ROOT_DIR/runtime/current"
