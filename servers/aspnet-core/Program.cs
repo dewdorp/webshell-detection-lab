@@ -71,6 +71,7 @@ app.MapGet("/upload.html", async context => await SendFile(context, Path.Combine
 app.MapGet("/upload", async context => await SendFile(context, Path.Combine(commonDir, "templates", "upload.html"), "text/html; charset=utf-8"));
 
 app.MapGet("/styles.css", async context => await SendFile(context, Path.Combine(commonDir, "public", "styles.css"), "text/css; charset=utf-8"));
+app.MapGet("/secutrace.png", async context => await SendFile(context, Path.Combine(commonDir, "public", "secutrace.png"), "image/png"));
 app.MapGet("/login.js", async context => await SendFile(context, Path.Combine(commonDir, "public", "login.js"), "application/javascript; charset=utf-8"));
 app.MapGet("/signup.js", async context => await SendFile(context, Path.Combine(commonDir, "public", "signup.js"), "application/javascript; charset=utf-8"));
 app.MapGet("/dashboard.js", async context => await SendFile(context, Path.Combine(commonDir, "public", "dashboard.js"), "application/javascript; charset=utf-8"));
