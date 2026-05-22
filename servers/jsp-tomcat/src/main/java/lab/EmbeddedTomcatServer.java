@@ -13,7 +13,7 @@ public class EmbeddedTomcatServer {
         File serverDir = new File(".").getCanonicalFile();
         File uploadDir = new File(serverDir, "uploads");
         File logDir = new File(serverDir, "logs");
-        uploadDir.mkdirs();
+        UploadPermissions.prepareDirectory(uploadDir);
         logDir.mkdirs();
         Tomcat tomcat = new Tomcat();
         tomcat.setPort(port);
