@@ -23,7 +23,7 @@ require_command() {
 
 prepare_upload_dir() {
   local upload_dir="$1"
-  "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$upload_dir"
+  bash "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$upload_dir"
 }
 
 write_active_file() {
