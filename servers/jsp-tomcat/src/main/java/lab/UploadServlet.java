@@ -56,6 +56,11 @@ public class UploadServlet extends HttpServlet {
             return;
         }
 
+        if ("/secutrace.png".equals(path)) {
+            serveFile(resp, new File(rootDir, "common/public/secutrace.png"), "image/png");
+            return;
+        }
+
         if (path.matches("^/(styles\\.css|login\\.js|signup\\.js|dashboard\\.js|upload\\.js)$")) {
             String name = cleanFilename(path.substring(1));
             String type = name.endsWith(".css") ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8";
