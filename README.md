@@ -18,6 +18,13 @@ GitHub URL:
 https://github.com/dewdorp/webshell-detection-lab/blob/test/docs/guide.md
 ```
 
+Additional lab execution guides:
+
+```text
+docs/executable-upload-permissions.md
+docs/automatic-upload-exec-handlers.md
+```
+
 ## Quick Start
 
 ```bash
@@ -59,6 +66,24 @@ Reset uploads while preserving the same executable permission mode:
 LAB_UPLOAD_EXECUTABLE=1 ./scripts/reset-uploads.sh
 ```
 
+## Automatic Upload Execution Handlers
+
+For a controlled lab where each runtime switch should also update the matching external execution handler, enable the explicit automatic handler mode:
+
+```bash
+LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh php
+LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
+LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+```
+
+`LAB_AUTO_EXEC_HANDLER=1` also enables executable upload permissions if `LAB_UPLOAD_EXECUTABLE` is not already set. Apache-backed handlers use `LAB_EXEC_HANDLER_PORT`, defaulting to `18080`.
+
+See:
+
+```text
+docs/automatic-upload-exec-handlers.md
+```
+
 ## Safety Boundary
 
-The lab intentionally provides weak upload behavior for defensive Agent validation. It does not include webshell samples, reverse shells, payload generators, command execution handlers, or automatic script-execution routing for uploaded files.
+The lab intentionally provides weak upload behavior for defensive Agent validation. It does not include webshell samples, reverse shells, payload generators, command execution handlers, or sample exploit payloads.
