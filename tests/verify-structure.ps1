@@ -59,15 +59,8 @@ $requiredPaths = @(
     'servers/aspnet-core/Program.cs',
     'servers/aspnet-core/uploads/.gitkeep',
     'servers/aspnet-core/logs/.gitkeep',
-    'docs/linux-setup.md',
-    'docs/external-server-install.md',
-    'docs/technology-stack.md',
-    'docs/webshell-detection-poc.md',
-    'docs/setup-node.md',
-    'docs/setup-php-apache.md',
-    'docs/setup-jsp-tomcat.md',
-    'docs/setup-aspnet-core.md',
-    'docs/design.md'
+    'docs/guide.md',
+    'docs/superpowers/plans/2026-05-21-webshell-detection-lab.md'
 )
 
 foreach ($path in $requiredPaths) {
@@ -90,6 +83,10 @@ foreach ($page in @('login.html', 'signup.html', 'dashboard.html', 'upload.html'
     Assert-Contains 'servers/php-apache/index.php' $page
     Assert-Contains 'servers/jsp-tomcat/src/main/java/lab/UploadServlet.java' $page
     Assert-Contains 'servers/aspnet-core/Program.cs' $page
+}
+
+foreach ($phrase in @('Webshell Detection Lab Guide', '웹쉘 탐지 랩 통합 가이드', 'https://secutrace.co.kr/upload.html')) {
+    Assert-Contains 'docs/guide.md' $phrase
 }
 
 $forbiddenNames = @(
