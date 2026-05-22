@@ -49,6 +49,12 @@ need_command() {
   fi
 }
 
+systemd_service_exists() {
+  local service="$1"
+  command -v systemctl >/dev/null 2>&1 || return 1
+  systemctl list-unit-files --type=service --no-legend "$service.service" 2>/dev/null | grep -q "^$service.service"
+}
+
 apache_available() {
   command -v a2ensite >/dev/null 2>&1 && command -v apache2ctl >/dev/null 2>&1
 }
@@ -62,6 +68,20 @@ Apache tooling was not found. Install Apache first, for example:
 MSG
     exit 1
   fi
+}
+
+print_apache_failure_help() {
+  cat >&2 <<MSG
+Apache failed to start or reload.
+Useful diagnostics:
+  sudo apache2ctl -S
+  sudo systemctl status apache2 --no-pager
+  sudo journalctl -xeu apache2 --no-pager | tail -n 80
+  sudo ss -ltnp | grep ':$LAB_EXEC_HANDLER_PORT'
+
+If TCP $LAB_EXEC_HANDLER_PORT is already in use, choose another handler port:
+  LAB_EXEC_HANDLER_PORT=19080 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh $RUNTIME
+MSG
 }
 
 disable_apache_exec_sites() {
@@ -79,9 +99,13 @@ disable_apache_exec_sites() {
 reload_apache() {
   as_root apache2ctl configtest
   if command -v systemctl >/dev/null 2>&1; then
-    as_root systemctl reload apache2 || as_root systemctl restart apache2
+    if systemctl is-active --quiet apache2; then
+      as_root systemctl reload apache2 || { print_apache_failure_help; exit 1; }
+    else
+      as_root systemctl start apache2 || { print_apache_failure_help; exit 1; }
+    fi
   else
-    as_root service apache2 reload || as_root service apache2 restart
+    as_root service apache2 reload || as_root service apache2 start || { print_apache_failure_help; exit 1; }
   fi
 }
 
@@ -186,7 +210,7 @@ find_tomcat_context_file() {
     fi
   done
 
-  printf '/etc/tomcat9/Catalina/localhost/%s.xml\n' "$TOMCAT_CONTEXT_NAME"
+  printf ''
 }
 
 find_tomcat_service() {
@@ -196,33 +220,72 @@ find_tomcat_service() {
   fi
 
   for service in tomcat9 tomcat10 tomcat; do
-    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files "$service.service" >/dev/null 2>&1; then
+    if systemd_service_exists "$service"; then
       printf '%s\n' "$service"
       return
     fi
   done
 
-  printf 'tomcat9\n'
+  printf ''
+}
+
+require_tomcat_service() {
+  local service
+  service="$(find_tomcat_service)"
+  if [ -z "$service" ]; then
+    cat >&2 <<MSG
+No Tomcat service was found.
+Install Tomcat or provide the service name explicitly, for example:
+  sudo apt update
+  sudo apt install -y tomcat9
+  LAB_TOMCAT_SERVICE=tomcat9 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+
+If your distribution uses Tomcat 10:
+  sudo apt install -y tomcat10
+  LAB_TOMCAT_SERVICE=tomcat10 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+MSG
+    exit 1
+  fi
+  printf '%s\n' "$service"
+}
+
+require_tomcat_context_file() {
+  local context_file
+  context_file="$(find_tomcat_context_file)"
+  if [ -z "$context_file" ]; then
+    cat >&2 <<MSG
+No Tomcat configuration directory was found.
+Install Tomcat first, or provide the context file path explicitly:
+  LAB_TOMCAT_CONTEXT_FILE=/etc/tomcat10/Catalina/localhost/$TOMCAT_CONTEXT_NAME.xml LAB_TOMCAT_SERVICE=tomcat10 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+MSG
+    exit 1
+  fi
+  printf '%s\n' "$context_file"
 }
 
 disable_tomcat_exec_context() {
-  local context_file
+  local context_file service
   context_file="$(find_tomcat_context_file)"
-  if [ -e "$context_file" ]; then
+  if [ -n "$context_file" ] && [ -e "$context_file" ]; then
     as_root rm -f "$context_file"
-    if command -v systemctl >/dev/null 2>&1; then
-      as_root systemctl reload "$(find_tomcat_service)" >/dev/null 2>&1 || true
+    service="$(find_tomcat_service)"
+    if [ -n "$service" ] && command -v systemctl >/dev/null 2>&1; then
+      as_root systemctl reload "$service" >/dev/null 2>&1 || true
     fi
   fi
 }
 
 reload_tomcat() {
   local service
-  service="$(find_tomcat_service)"
+  service="$(require_tomcat_service)"
   if command -v systemctl >/dev/null 2>&1; then
-    as_root systemctl reload "$service" || as_root systemctl restart "$service"
+    if systemctl is-active --quiet "$service"; then
+      as_root systemctl reload "$service" || as_root systemctl restart "$service"
+    else
+      as_root systemctl start "$service"
+    fi
   else
-    as_root service "$service" reload || as_root service "$service" restart
+    as_root service "$service" reload || as_root service "$service" start
   fi
 }
 
@@ -231,7 +294,7 @@ configure_jsp() {
 
   local upload_dir="$ROOT_DIR/servers/jsp-tomcat/uploads"
   local context_file
-  context_file="$(find_tomcat_context_file)"
+  context_file="$(require_tomcat_context_file)"
 
   if ! command -v systemctl >/dev/null 2>&1 && ! command -v service >/dev/null 2>&1; then
     printf 'No service manager was found for Tomcat reload/restart. Install and start Tomcat manually.\n' >&2
