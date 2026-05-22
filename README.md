@@ -1,12 +1,12 @@
 # Webshell Detection Lab
 
-Linux-based vulnerable upload lab for validating a file-system monitoring webshell detection Agent.
+SecuTrace-style multi-runtime web application with a separate vulnerable upload page for validating a file-system monitoring webshell detection Agent.
 
 This is a separate project and does not modify the original `dewdorp/Webserver` app.
 
 ## Safety Notice
 
-This lab intentionally accepts weak file uploads so a defensive Agent can observe file creation and modification events. Use it only in a controlled environment.
+This lab preserves the SecuTrace home, login, signup, and dashboard flow while adding a separate upload test page. The upload page intentionally accepts weak file uploads so a defensive Agent can observe file creation and modification events. Use it only in a controlled environment.
 
 The project does not include webshell samples, reverse shells, payload generators, or command execution handlers. Bring your own samples when validating your detection product.
 
@@ -19,10 +19,16 @@ chmod +x scripts/*.sh
 ./scripts/switch-server.sh node
 ```
 
-Open:
+Open the preserved SecuTrace-style site:
 
 ```text
 http://secutrace.co.kr:8080/
+```
+
+Open the separate upload test page:
+
+```text
+http://secutrace.co.kr:8080/upload.html
 ```
 
 Switch runtimes:
@@ -48,13 +54,17 @@ Reset uploads and logs:
 
 ## External Server Install
 
-After this project is pushed to GitHub as `dewdorp/webshell-detection-lab`, an external Linux server can install it with:
+An external Linux server can install it with:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dewdorp/webshell-detection-lab/test/install.sh | bash
 ```
 
-Detailed instructions are in `docs/external-server-install.md`.
+Detailed instructions are in:
+
+```text
+docs/external-server-install.md
+```
 
 Additional documentation:
 
@@ -63,34 +73,16 @@ docs/technology-stack.md
 docs/webshell-detection-poc.md
 ```
 
-## Network Exposure
-
-The default bind host is `0.0.0.0` so the lab can be reached externally when firewall rules permit it. Use firewall or cloud security group rules to restrict access to trusted IP ranges.
-
-For `secutrace.co.kr`, point the DNS A record to the Linux server public IP and start a runtime:
-
-```bash
-LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
-```
-
-For HTTPS on ports `80` and `443`, use Nginx and Certbot:
-
-```bash
-sudo DOMAIN=secutrace.co.kr ADMIN_EMAIL=admin@secutrace.co.kr ./scripts/setup-nginx-ssl.sh
-LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
-```
-
-Then open:
-
-```text
-https://secutrace.co.kr/
-```
-
 ## Routes
 
 Each runtime exposes the same route contract:
 
 - `GET /`
+- `GET /index.html`
+- `GET /login.html`
+- `GET /signup.html`
+- `GET /dashboard.html`
+- `GET /upload.html`
 - `GET /health`
 - `POST /upload`
 - `GET /files`
@@ -116,3 +108,27 @@ runtime/current/uploads
 ```
 
 If your Agent does not follow symlinks, configure it with the concrete path printed by `switch-server.sh`.
+
+## Network Exposure
+
+The default bind host is `0.0.0.0` so the lab can be reached externally when firewall rules permit it. Use firewall or cloud security group rules to restrict access to trusted IP ranges.
+
+For `secutrace.co.kr`, point the DNS A record to the Linux server public IP and start a runtime:
+
+```bash
+LAB_HOST=0.0.0.0 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+For HTTPS on ports `80` and `443`, use Nginx and Certbot:
+
+```bash
+sudo DOMAIN=secutrace.co.kr ADMIN_EMAIL=admin@secutrace.co.kr ./scripts/setup-nginx-ssl.sh
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
+```
+
+Then open:
+
+```text
+https://secutrace.co.kr/
+https://secutrace.co.kr/upload.html
+```
