@@ -37,6 +37,9 @@ require_contains "scripts/setup-upload-exec-handler.sh" "configure_jsp" "JSP Tom
 require_contains "scripts/setup-upload-exec-handler.sh" "disable_apache_exec_sites" "previous Apache handler cleanup"
 require_contains "scripts/setup-upload-exec-handler.sh" "disable_tomcat_exec_context" "previous Tomcat handler cleanup"
 require_contains "scripts/setup-upload-exec-handler.sh" "LAB_EXEC_HANDLER_PORT" "separate handler port support"
+require_contains "scripts/setup-upload-exec-handler.sh" "systemd_service_exists" "reliable systemd service detection"
+require_contains "scripts/setup-upload-exec-handler.sh" "print_apache_failure_help" "Apache startup diagnostics"
+require_contains "scripts/setup-upload-exec-handler.sh" "No Tomcat service was found" "Tomcat missing-service diagnostic"
 
 require_contains "scripts/switch-server.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
 require_contains "scripts/switch-server.sh" "LAB_UPLOAD_EXECUTABLE=1" "automatic executable permission enablement"
