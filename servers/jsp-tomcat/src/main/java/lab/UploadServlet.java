@@ -35,7 +35,7 @@ public class UploadServlet extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        uploadDir.mkdirs();
+        UploadPermissions.prepareDirectory(uploadDir);
         logDir.mkdirs();
 
         String path = req.getRequestURI();
@@ -75,7 +75,7 @@ public class UploadServlet extends HttpServlet {
         }
 
         if ("/health".equals(path)) {
-            json(resp, 200, "{\"ok\":true,\"runtime\":\"jsp\",\"uploadPath\":\"" + escape(uploadDir.getAbsolutePath()) + "\"}");
+            json(resp, 200, "{\"ok\":true,\"runtime\":\"jsp\",\"uploadPath\":\"" + escape(uploadDir.getAbsolutePath()) + "\",\"uploadExecutable\":" + UploadPermissions.enabled() + "}");
             return;
         }
 
@@ -137,6 +137,7 @@ public class UploadServlet extends HttpServlet {
         String storedName = cleanFilename(originalName);
         File storedFile = new File(uploadDir, storedName);
         part.write(storedFile.getAbsolutePath());
+        UploadPermissions.prepareFile(storedFile);
 
         String event = "{"
             + "\"runtime\":\"jsp\","
