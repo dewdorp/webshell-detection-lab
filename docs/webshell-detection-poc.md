@@ -4,7 +4,7 @@
 
 ### Objective
 
-This guide explains how to validate a file-system monitoring webshell detection Agent with `webshell-detection-lab`.
+This guide explains how to validate a file-system monitoring webshell detection Agent with the separate SecuTrace upload page in `webshell-detection-lab`.
 
 The lab is designed to answer these questions:
 
@@ -91,13 +91,14 @@ LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
 curl -k https://secutrace.co.kr/health
 ```
 
-4. Open the UI:
+4. Open the preserved SecuTrace site and the separate upload test page:
 
 ```text
 https://secutrace.co.kr/
+https://secutrace.co.kr/upload.html
 ```
 
-5. Upload your controlled test sample through the UI.
+5. Upload your controlled test sample through the upload UI.
 
 6. Record the server-side upload log:
 
@@ -152,7 +153,7 @@ sudo certbot renew --dry-run
 
 ### 목적
 
-이 문서는 `webshell-detection-lab`를 사용해 파일 시스템 감시 방식의 웹쉘 탐지 Agent를 검증하는 절차를 설명합니다.
+이 문서는 `webshell-detection-lab`의 별도 SecuTrace 업로드 페이지를 사용해 파일 시스템 감시 방식의 웹쉘 탐지 Agent를 검증하는 절차를 설명합니다.
 
 이 랩은 다음 질문에 답하기 위해 설계되었습니다:
 
@@ -239,13 +240,14 @@ LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
 curl -k https://secutrace.co.kr/health
 ```
 
-4. UI 접속:
+4. 보존된 SecuTrace 사이트와 별도 업로드 테스트 페이지 접속:
 
 ```text
 https://secutrace.co.kr/
+https://secutrace.co.kr/upload.html
 ```
 
-5. 사용자가 준비한 통제된 테스트 샘플을 UI에서 업로드합니다.
+5. 사용자가 준비한 통제된 테스트 샘플을 업로드 UI에서 업로드합니다.
 
 6. 서버 업로드 로그 확인:
 
