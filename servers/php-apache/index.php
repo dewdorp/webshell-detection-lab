@@ -5,8 +5,18 @@ $rootDir = dirname(__DIR__, 2);
 $uploadDir = $serverDir . DIRECTORY_SEPARATOR . 'uploads';
 $logDir = $serverDir . DIRECTORY_SEPARATOR . 'logs';
 
+function upload_exec_enabled() {
+    $value = strtolower((string) (getenv('LAB_UPLOAD_EXECUTABLE') ?: '0'));
+    return in_array($value, ['1', 'true', 'yes', 'on'], true);
+}
+
+function apply_executable_upload_permissions($path) {
+    if (upload_exec_enabled()) @chmod($path, 0775);
+}
+
 @mkdir($uploadDir, 0775, true);
 @mkdir($logDir, 0775, true);
+apply_executable_upload_permissions($uploadDir);
 
 function json_response($payload, $status = 200) {
     http_response_code($status);
@@ -84,7 +94,7 @@ if (str_starts_with($path, '/uploads/')) {
 }
 
 if ($path === '/health') {
-    json_response(['ok' => true, 'runtime' => $runtime, 'uploadPath' => $uploadDir]);
+    json_response(['ok' => true, 'runtime' => $runtime, 'uploadPath' => $uploadDir, 'uploadExecutable' => upload_exec_enabled()]);
     return;
 }
 
@@ -134,6 +144,7 @@ if ($path === '/upload' && $method === 'POST') {
         json_response(['success' => false, 'message' => 'failed to store upload'], 500);
         return;
     }
+    apply_executable_upload_permissions($storedPath);
 
     $event = [
         'runtime' => $runtime,
