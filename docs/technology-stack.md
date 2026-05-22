@@ -4,7 +4,7 @@
 
 ### Purpose
 
-`webshell-detection-lab` is a Linux-based vulnerable upload lab for validating a file-system monitoring webshell detection Agent. It provides the same upload workflow across multiple language runtimes so detection behavior can be compared by server stack.
+`webshell-detection-lab` is a SecuTrace-style multi-runtime web application for validating a file-system monitoring webshell detection Agent. It preserves the original SecuTrace home, login, signup, and dashboard pages, then adds a separate upload test page for controlled PoC work.
 
 ### Runtime Stack
 
@@ -17,8 +17,8 @@
 
 ### Shared Components
 
-- `common/templates/index.html`: shared upload UI.
-- `common/public/app.js`: shared browser-side upload and file-list logic.
+- `common/templates/*.html`: shared SecuTrace pages and upload page.
+- `common/public/login.js`, `signup.js`, `dashboard.js`, `upload.js`: shared browser-side behavior.
 - `common/public/styles.css`: shared UI styles.
 - `scripts/switch-server.sh`: switches active runtime.
 - `scripts/stop-server.sh`: stops the active runtime.
@@ -65,7 +65,7 @@ This project intentionally provides weak upload controls for defensive testing. 
 
 ### 목적
 
-`webshell-detection-lab`는 파일 시스템을 지속 감시하는 웹쉘 탐지 Agent를 검증하기 위한 Linux 기반 취약 업로드 랩입니다. 여러 언어 런타임에서 동일한 업로드 흐름을 제공하여 웹서버 스택별 탐지 결과를 비교할 수 있게 합니다.
+`webshell-detection-lab`는 파일 시스템을 지속 감시하는 웹쉘 탐지 Agent를 검증하기 위한 SecuTrace 스타일의 다중 런타임 웹 애플리케이션입니다. 기존 SecuTrace 홈, 로그인, 회원가입, 대시보드 화면을 유지하고, 통제된 PoC를 위한 별도 업로드 테스트 페이지를 추가합니다.
 
 ### 런타임 스택
 
@@ -78,8 +78,8 @@ This project intentionally provides weak upload controls for defensive testing. 
 
 ### 공통 구성 요소
 
-- `common/templates/index.html`: 공통 업로드 UI.
-- `common/public/app.js`: 브라우저 업로드 및 파일 목록 로직.
+- `common/templates/*.html`: 공통 SecuTrace 페이지와 업로드 페이지.
+- `common/public/login.js`, `signup.js`, `dashboard.js`, `upload.js`: 공통 브라우저 동작.
 - `common/public/styles.css`: 공통 UI 스타일.
 - `scripts/switch-server.sh`: 활성 런타임 교체.
 - `scripts/stop-server.sh`: 활성 런타임 종료.
