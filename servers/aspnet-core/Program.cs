@@ -11,9 +11,32 @@ var rootDir = Path.GetFullPath(Path.Combine(projectDir, "..", ".."));
 var uploadDir = Path.Combine(projectDir, "uploads");
 var logDir = Path.Combine(projectDir, "logs");
 var commonDir = Path.Combine(rootDir, "common");
+var uploadExecutable = UploadExecutableEnabled();
 
 Directory.CreateDirectory(uploadDir);
 Directory.CreateDirectory(logDir);
+ApplyExecutableUploadPermissions(uploadDir, uploadExecutable);
+
+static bool UploadExecutableEnabled()
+{
+    var value = Environment.GetEnvironmentVariable("LAB_UPLOAD_EXECUTABLE")?.ToLowerInvariant() ?? "0";
+    return value is "1" or "true" or "yes" or "on";
+}
+
+static void ApplyExecutableUploadPermissions(string path, bool enabled)
+{
+    if (!enabled || OperatingSystem.IsWindows()) return;
+
+    File.SetUnixFileMode(path,
+        UnixFileMode.UserRead |
+        UnixFileMode.UserWrite |
+        UnixFileMode.UserExecute |
+        UnixFileMode.GroupRead |
+        UnixFileMode.GroupWrite |
+        UnixFileMode.GroupExecute |
+        UnixFileMode.OtherRead |
+        UnixFileMode.OtherExecute);
+}
 
 static string CleanFilename(string filename)
 {
@@ -78,7 +101,7 @@ app.MapGet("/dashboard.js", async context => await SendFile(context, Path.Combin
 app.MapGet("/upload.js", async context => await SendFile(context, Path.Combine(commonDir, "public", "upload.js"), "application/javascript; charset=utf-8"));
 app.MapGet("/uploads/{name}", async (HttpContext context, string name) => await SendFile(context, Path.Combine(uploadDir, CleanFilename(name)), "application/octet-stream"));
 
-app.MapGet("/health", () => Results.Json(new { ok = true, runtime, uploadPath = uploadDir }));
+app.MapGet("/health", () => Results.Json(new { ok = true, runtime, uploadPath = uploadDir, uploadExecutable }));
 
 app.MapPost("/api/signup", async (HttpContext context) =>
 {
@@ -121,6 +144,7 @@ app.MapPost("/upload", async (HttpContext context) =>
     var storedName = CleanFilename(file.FileName);
     var storedPath = Path.Combine(uploadDir, storedName);
     await using (var output = File.Create(storedPath)) await file.CopyToAsync(output);
+    ApplyExecutableUploadPermissions(storedPath, uploadExecutable);
 
     var uploadEvent = new
     {
