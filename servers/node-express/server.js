@@ -12,9 +12,11 @@ const rootDir = path.resolve(serverDir, '..', '..');
 const uploadDir = path.join(serverDir, 'uploads');
 const logDir = path.join(serverDir, 'logs');
 const commonDir = path.join(rootDir, 'common');
+const uploadExecutable = /^(1|true|yes|on)$/i.test(process.env.LAB_UPLOAD_EXECUTABLE || '');
 
 fs.mkdirSync(uploadDir, { recursive: true });
 fs.mkdirSync(logDir, { recursive: true });
+if (uploadExecutable) fs.chmodSync(uploadDir, 0o775);
 
 function cleanFilename(filename) {
   const base = path.basename(filename || 'upload.bin');
@@ -23,6 +25,10 @@ function cleanFilename(filename) {
 
 function sha256(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+function applyExecutableUploadPermissions(filePath) {
+  if (uploadExecutable) fs.chmodSync(filePath, 0o775);
 }
 
 function appendUploadLog(event) {
@@ -67,7 +73,7 @@ app.get('/dashboard.html', (_req, res) => sendPage(res, 'dashboard.html'));
 app.get('/upload.html', (_req, res) => sendPage(res, 'upload.html'));
 app.get('/upload', (_req, res) => sendPage(res, 'upload.html'));
 
-app.get('/health', (_req, res) => res.json({ ok: true, runtime, uploadPath: uploadDir }));
+app.get('/health', (_req, res) => res.json({ ok: true, runtime, uploadPath: uploadDir, uploadExecutable }));
 
 app.post('/api/signup', (req, res) => {
   const username = String(req.body?.username || '').trim();
@@ -93,6 +99,7 @@ app.get('/api/dashboard', (req, res) => {
 
 app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: 'file field is required' });
+  applyExecutableUploadPermissions(req.file.path);
   const event = {
     runtime,
     originalName: req.file.originalname,
