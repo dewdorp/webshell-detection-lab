@@ -64,6 +64,11 @@ if ($path === '/upload' && $method === 'GET') {
     return;
 }
 
+if ($path === '/secutrace.png') {
+    serve_file($rootDir . '/common/public/secutrace.png', 'image/png');
+    return;
+}
+
 if (preg_match('/^\/(styles\.css|login\.js|signup\.js|dashboard\.js|upload\.js)$/', $path)) {
     $name = basename($path);
     $target = $rootDir . '/common/public/' . $name;
