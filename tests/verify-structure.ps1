@@ -79,6 +79,13 @@ foreach ($route in @('/health', '/upload', '/files')) {
     Assert-Contains 'servers/aspnet-core/Program.cs' $route
 }
 
+foreach ($asset in @('secutrace.png')) {
+    Assert-Contains 'servers/node-express/server.js' 'express.static'
+    Assert-Contains 'servers/php-apache/index.php' $asset
+    Assert-Contains 'servers/jsp-tomcat/src/main/java/lab/UploadServlet.java' $asset
+    Assert-Contains 'servers/aspnet-core/Program.cs' $asset
+}
+
 foreach ($page in @('login.html', 'signup.html', 'dashboard.html', 'upload.html')) {
     Assert-Contains 'servers/node-express/server.js' $page
     Assert-Contains 'servers/php-apache/index.php' $page
