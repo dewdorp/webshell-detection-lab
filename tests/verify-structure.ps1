@@ -31,6 +31,7 @@ $requiredPaths = @(
     'common/public/signup.js',
     'common/public/dashboard.js',
     'common/public/upload.js',
+    'common/public/secutrace.jpg',
     'common/public/styles.css',
     'common/templates/index.html',
     'common/templates/login.html',
@@ -88,6 +89,8 @@ foreach ($page in @('login.html', 'signup.html', 'dashboard.html', 'upload.html'
 foreach ($phrase in @('Webshell Detection Lab Guide', '웹쉘 탐지 랩 통합 가이드', 'https://secutrace.co.kr/upload.html')) {
     Assert-Contains 'docs/guide.md' $phrase
 }
+
+Assert-Contains 'common/public/styles.css' 'secutrace.jpg'
 
 $forbiddenNames = @(
     'samples',
