@@ -8,6 +8,7 @@ LAB_HOST="${LAB_HOST:-0.0.0.0}"
 PID_DIR="$ROOT_DIR/runtime/pids"
 ACTIVE_FILE="$ROOT_DIR/runtime/active-server.json"
 CURRENT_LINK="$ROOT_DIR/runtime/current"
+UPLOAD_PERMISSIONS_SCRIPT="$ROOT_DIR/scripts/upload-permissions.sh"
 
 usage() { printf 'Usage: %s node|php|jsp|aspnet\n' "$0"; }
 
@@ -18,6 +19,11 @@ require_command() {
     printf 'Missing required command: %s\n%s\n' "$command_name" "$help_text" >&2
     exit 1
   fi
+}
+
+prepare_upload_dir() {
+  local upload_dir="$1"
+  "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$upload_dir"
 }
 
 write_active_file() {
@@ -31,6 +37,7 @@ write_active_file() {
   "port": $LAB_PORT,
   "serverDir": "$server_dir",
   "uploadPath": "$upload_dir",
+  "uploadExecutable": "${LAB_UPLOAD_EXECUTABLE:-0}",
   "startedAt": "$started_at"
 }
 JSON
@@ -44,6 +51,7 @@ start_server() {
   local log_dir="$server_dir/logs"
   local pid_file="$PID_DIR/$runtime.pid"
   mkdir -p "$PID_DIR" "$upload_dir" "$log_dir"
+  prepare_upload_dir "$upload_dir"
   (cd "$server_dir" && "$@" > "$log_dir/server.out.log" 2> "$log_dir/server.err.log" & echo $! > "$pid_file")
   local pid
   pid="$(cat "$pid_file")"
@@ -58,6 +66,7 @@ start_server() {
   printf '%s server started on http://%s:%s with PID %s\n' "$runtime" "$LAB_HOST" "$LAB_PORT" "$pid"
   printf 'External URL example: http://secutrace.co.kr:%s\n' "$LAB_PORT"
   printf 'Agent watch path: %s\n' "$upload_dir"
+  if [ "${LAB_UPLOAD_EXECUTABLE:-0}" != "0" ]; then printf 'Executable upload permissions: enabled via LAB_UPLOAD_EXECUTABLE=%s\n' "${LAB_UPLOAD_EXECUTABLE:-0}"; fi
   if [ -L "$CURRENT_LINK" ]; then printf 'Stable symlink path: %s/uploads\n' "$CURRENT_LINK"; fi
 }
 
