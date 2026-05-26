@@ -197,7 +197,7 @@ find_tomcat_context_file() {
     return
   fi
 
-  for base in /etc/tomcat9 /etc/tomcat10 /var/lib/tomcat9/conf /var/lib/tomcat10/conf; do
+  for base in /var/lib/tomcat10/conf /etc/tomcat10 /var/lib/tomcat9/conf /etc/tomcat9; do
     if [ -d "$base" ]; then
       printf '%s/Catalina/localhost/%s.xml\n' "$base" "$TOMCAT_CONTEXT_NAME"
       return
@@ -213,7 +213,7 @@ find_tomcat_service() {
     return
   fi
 
-  for service in tomcat9 tomcat10 tomcat; do
+  for service in tomcat10 tomcat9 tomcat; do
     if systemd_service_exists "$service"; then
       printf '%s\n' "$service"
       return
@@ -231,10 +231,6 @@ require_tomcat_service() {
 No Tomcat service was found.
 Install Tomcat or provide the service name explicitly, for example:
   sudo apt update
-  sudo apt install -y tomcat9
-  LAB_TOMCAT_SERVICE=tomcat9 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
-
-If your distribution uses Tomcat 10:
   sudo apt install -y tomcat10
   LAB_TOMCAT_SERVICE=tomcat10 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 MSG
@@ -250,7 +246,7 @@ require_tomcat_context_file() {
     cat >&2 <<MSG
 No Tomcat configuration directory was found.
 Install Tomcat first, or provide the context file path explicitly:
-  LAB_TOMCAT_CONTEXT_FILE=/etc/tomcat10/Catalina/localhost/$TOMCAT_CONTEXT_NAME.xml LAB_TOMCAT_SERVICE=tomcat10 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+  LAB_TOMCAT_CONTEXT_FILE=/var/lib/tomcat10/conf/Catalina/localhost/$TOMCAT_CONTEXT_NAME.xml LAB_TOMCAT_SERVICE=tomcat10 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 MSG
     exit 1
   fi
@@ -264,22 +260,18 @@ disable_tomcat_exec_context() {
     as_root rm -f "$context_file"
     service="$(find_tomcat_service)"
     if [ -n "$service" ] && command -v systemctl >/dev/null 2>&1; then
-      as_root systemctl reload "$service" >/dev/null 2>&1 || true
+      as_root systemctl restart "$service" >/dev/null 2>&1 || true
     fi
   fi
 }
 
-reload_tomcat() {
+restart_tomcat() {
   local service
   service="$(require_tomcat_service)"
   if command -v systemctl >/dev/null 2>&1; then
-    if systemctl is-active --quiet "$service"; then
-      as_root systemctl reload "$service" || as_root systemctl restart "$service"
-    else
-      as_root systemctl start "$service"
-    fi
+    as_root systemctl restart "$service"
   else
-    as_root service "$service" reload || as_root service "$service" start
+    as_root service "$service" restart
   fi
 }
 
@@ -291,14 +283,14 @@ configure_jsp() {
   context_file="$(require_tomcat_context_file)"
 
   if ! command -v systemctl >/dev/null 2>&1 && ! command -v service >/dev/null 2>&1; then
-    printf 'No service manager was found for Tomcat reload/restart. Install and start Tomcat manually.\n' >&2
+    printf 'No service manager was found for Tomcat restart. Install and start Tomcat manually.\n' >&2
     exit 1
   fi
 
   write_root_file "$context_file" <<CONF
 <Context docBase="$upload_dir" reloadable="true" />
 CONF
-  reload_tomcat
+  restart_tomcat
 
   printf 'JSP upload execution handler enabled at the Tomcat context /%s/<file>.jsp\n' "$TOMCAT_CONTEXT_NAME"
 }
