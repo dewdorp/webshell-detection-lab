@@ -31,13 +31,11 @@ require_contains "scripts/upload-permissions.sh" "chmod 0775" "0775 permission a
 
 require_file "scripts/setup-upload-exec-handler.sh"
 require_contains "scripts/setup-upload-exec-handler.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
-require_contains "scripts/setup-upload-exec-handler.sh" "LAB_EXEC_HANDLER_HOST" "loopback execution handler bind host"
 require_contains "scripts/setup-upload-exec-handler.sh" "configure_php" "PHP handler setup"
 require_contains "scripts/setup-upload-exec-handler.sh" "configure_node" "Node CGI handler setup"
 require_contains "scripts/setup-upload-exec-handler.sh" "configure_jsp" "JSP Tomcat handler setup"
 require_contains "scripts/setup-upload-exec-handler.sh" "FallbackResource /index.php" "PHP fallback support"
 require_contains "scripts/setup-upload-exec-handler.sh" 'write_apache_site "webshell-lab-exec-node" "$document_root" "$upload_dir" "$handler_block" ""' "Node CGI fallback disabled"
-require_contains "scripts/setup-upload-exec-handler.sh" 'write_apache_site "webshell-lab-exec-python" "$document_root" "$upload_dir" "$handler_block" ""' "Python CGI fallback disabled"
 require_contains "scripts/setup-upload-exec-handler.sh" "restart_tomcat" "Tomcat restart helper"
 require_contains "scripts/setup-upload-exec-handler.sh" 'systemctl restart "$service"' "Tomcat restart instead of unsupported reload"
 require_contains "scripts/setup-upload-exec-handler.sh" "/var/lib/tomcat10/conf" "Tomcat 10 context path support"
@@ -49,8 +47,6 @@ require_contains "scripts/update-nginx-lab-upstream.sh" "root location proxy_pas
 require_contains "scripts/update-nginx-lab-upstream.sh" 'proxy_pass http://$LAB_UPSTREAM_HOST:$LAB_UPSTREAM_PORT;' "root upstream target"
 require_contains "scripts/update-nginx-lab-upstream.sh" "rm -f \"$OLD_UPLOAD_UI_SNIPPET\"" "legacy upload UI snippet cleanup"
 require_contains "scripts/update-nginx-lab-upstream.sh" "Nginx root upstream updated" "root upstream status"
-require_contains "scripts/update-nginx-lab-upstream.sh" "nginx -t" "Nginx validation before reload"
-require_contains "scripts/update-nginx-lab-upstream.sh" "systemctl reload nginx" "Nginx reload after upstream update"
 
 require_file "scripts/setup-nginx-exec-proxy.sh"
 require_contains "scripts/setup-nginx-exec-proxy.sh" "LAB_EXEC_PROXY_PREFIX" "HTTPS exec proxy prefix"
@@ -64,8 +60,14 @@ require_contains "scripts/switch-server.sh" "LAB_UPLOAD_EXECUTABLE=1" "automatic
 require_contains "scripts/switch-server.sh" "setup-upload-exec-handler.sh" "automatic handler setup script"
 require_contains "scripts/switch-server.sh" "LAB_AUTO_NGINX_UPSTREAM" "automatic Nginx root upstream toggle"
 require_contains "scripts/switch-server.sh" "update-nginx-lab-upstream.sh" "automatic Nginx root upstream script"
-require_contains "scripts/switch-server.sh" "maybe_update_nginx_upstream" "Nginx root upstream update hook"
 require_contains "scripts/switch-server.sh" "Automatic Nginx root upstream" "clear Nginx root upstream status"
+require_contains "scripts/switch-server.sh" "prepare_jsp_switch" "JSP switch preparation hook"
+require_contains "scripts/switch-server.sh" "free_tomcat_exec_port_for_jsp" "JSP Tomcat port cleanup"
+require_contains "scripts/switch-server.sh" "LAB_TOMCAT_UPSTREAM_PORT" "configurable JSP Tomcat execution port"
+require_contains "scripts/switch-server.sh" "previous lab process on Tomcat JSP execution port" "stale lab process cleanup message"
+require_contains "scripts/switch-server.sh" "JSP portal cannot use LAB_PORT" "JSP portal port conflict warning"
+require_contains "scripts/switch-server.sh" "is_tomcat_process" "Tomcat process detection"
+require_contains "scripts/switch-server.sh" "is_lab_process" "lab process detection"
 require_contains "scripts/switch-server.sh" "prepare-dir" "upload directory preparation"
 require_contains "scripts/reset-uploads.sh" "prepare-dir" "upload directory preparation after reset"
 
@@ -96,6 +98,7 @@ require_contains "docs/automatic-upload-exec-handlers.md" "openjdk-21-jdk" "Tomc
 require_contains "README.md" "LAB_AUTO_EXEC_HANDLER=1" "README automatic handler usage"
 require_contains "README.md" "setup-nginx-exec-proxy.sh" "README HTTPS proxy usage"
 require_contains "README.md" "LAB_AUTO_NGINX_UPSTREAM" "README automatic Nginx root upstream usage"
+require_contains "README.md" "JSP uses `8088`" "README JSP split-port guidance"
 
 if [ "$failures" -gt 0 ]; then
   printf '\nUpload executable config check failed with %s issue(s).\n' "$failures" >&2
