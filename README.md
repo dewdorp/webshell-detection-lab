@@ -78,9 +78,15 @@ LAB_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server
 
 `LAB_AUTO_EXEC_HANDLER=1` also enables executable upload permissions if `LAB_UPLOAD_EXECUTABLE` is not already set. Apache-backed handlers bind to `127.0.0.1:18080` by default.
 
-When `/etc/nginx/sites-available/webshell-detection-lab` exists, the same switch command also updates the main Nginx upload-page upstream through `scripts/update-nginx-lab-upstream.sh`. For example, switching JSP with `LAB_PORT=8088` updates `https://<domain>/upload.html` to proxy to `127.0.0.1:8088` instead of the system Tomcat `8080` page. Disable that behavior with `LAB_AUTO_NGINX_UPSTREAM=0`.
+When `/etc/nginx/sites-available/webshell-detection-lab` exists, the same switch command also refreshes an isolated upload UI proxy through `scripts/update-nginx-lab-upstream.sh`. It preserves the original website at `https://<domain>/` and exposes the lab upload UI at:
 
-For HTTPS-only access through Nginx, configure the execution proxy once:
+```text
+https://<domain>/lab-upload/upload.html
+```
+
+For compatibility, `https://<domain>/upload.html` redirects to `/lab-upload/upload.html`. Disable that behavior with `LAB_AUTO_NGINX_UPSTREAM=0`.
+
+For HTTPS-only execution testing through Nginx, configure the execution proxy once:
 
 ```bash
 sudo DOMAIN=test.secutrace.co.kr ./scripts/setup-nginx-exec-proxy.sh
