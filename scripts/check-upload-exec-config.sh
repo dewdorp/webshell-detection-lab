@@ -50,9 +50,11 @@ require_contains "scripts/setup-upload-exec-handler.sh" 'systemctl restart "$ser
 require_contains "scripts/setup-upload-exec-handler.sh" "/var/lib/tomcat10/conf" "Tomcat 10 context path support"
 
 require_file "scripts/update-nginx-lab-upstream.sh"
-require_contains "scripts/update-nginx-lab-upstream.sh" "LAB_UPSTREAM_HOST" "Nginx upload upstream host"
-require_contains "scripts/update-nginx-lab-upstream.sh" "LAB_UPSTREAM_PORT" "Nginx upload upstream port"
-require_contains "scripts/update-nginx-lab-upstream.sh" "location[[:space:]]+\\/" "root location update targeting"
+require_contains "scripts/update-nginx-lab-upstream.sh" "webshell-lab-upload-ui.conf" "isolated upload UI snippet"
+require_contains "scripts/update-nginx-lab-upstream.sh" "location = /upload.html" "upload page redirect"
+require_contains "scripts/update-nginx-lab-upstream.sh" "location ^~ /lab-upload/" "prefixed upload UI proxy"
+require_contains "scripts/update-nginx-lab-upstream.sh" 'proxy_pass http://$LAB_UPSTREAM_HOST:$LAB_UPSTREAM_PORT/;' "upload UI upstream"
+require_contains "scripts/update-nginx-lab-upstream.sh" "Existing site root location is preserved" "original site preservation message"
 require_contains "scripts/update-nginx-lab-upstream.sh" "nginx -t" "Nginx validation before reload"
 require_contains "scripts/update-nginx-lab-upstream.sh" "systemctl reload nginx" "Nginx reload after upstream update"
 
@@ -67,11 +69,18 @@ require_contains "scripts/setup-nginx-ssl.sh" "webshell-lab-exec-proxy*.conf" "o
 require_contains "scripts/switch-server.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
 require_contains "scripts/switch-server.sh" "LAB_UPLOAD_EXECUTABLE=1" "automatic executable permission enablement"
 require_contains "scripts/switch-server.sh" "setup-upload-exec-handler.sh" "automatic handler setup script"
-require_contains "scripts/switch-server.sh" "LAB_AUTO_NGINX_UPSTREAM" "automatic Nginx upload upstream toggle"
-require_contains "scripts/switch-server.sh" "update-nginx-lab-upstream.sh" "automatic Nginx upload upstream script"
-require_contains "scripts/switch-server.sh" "maybe_update_nginx_upstream" "Nginx upload upstream update hook"
+require_contains "scripts/switch-server.sh" "LAB_AUTO_NGINX_UPSTREAM" "automatic Nginx upload UI toggle"
+require_contains "scripts/switch-server.sh" "update-nginx-lab-upstream.sh" "automatic Nginx upload UI proxy script"
+require_contains "scripts/switch-server.sh" "maybe_update_nginx_upstream" "Nginx upload UI update hook"
+require_contains "scripts/switch-server.sh" "Automatic Nginx upload UI proxy" "clear Nginx upload UI status"
 require_contains "scripts/switch-server.sh" "prepare-dir" "upload directory preparation"
 require_contains "scripts/reset-uploads.sh" "prepare-dir" "upload directory preparation after reset"
+
+require_contains "common/templates/upload.html" 'href="styles.css"' "relative upload page stylesheet"
+require_contains "common/templates/upload.html" 'src="upload.js"' "relative upload page script"
+require_contains "common/public/upload.js" "basePath" "prefixed upload UI base path detection"
+require_contains "common/public/upload.js" "labUrl('/upload')" "prefixed upload endpoint"
+require_contains "common/public/upload.js" "labUrl(rawHref)" "prefixed uploaded file links"
 
 require_contains "servers/node-express/server.js" "LAB_UPLOAD_EXECUTABLE" "the executable upload toggle"
 require_contains "servers/node-express/server.js" "chmodSync(filePath, 0o775)" "uploaded file chmod"
@@ -90,7 +99,7 @@ require_contains "servers/aspnet-core/Program.cs" "File.SetUnixFileMode(path" "u
 require_file "docs/automatic-upload-exec-handlers.md"
 require_contains "docs/automatic-upload-exec-handlers.md" "LAB_AUTO_EXEC_HANDLER=1" "automatic handler guide"
 require_contains "docs/automatic-upload-exec-handlers.md" "setup-nginx-exec-proxy.sh" "HTTPS proxy guide"
-require_contains "docs/automatic-upload-exec-handlers.md" "update-nginx-lab-upstream.sh" "automatic upload page upstream guide"
+require_contains "docs/automatic-upload-exec-handlers.md" "update-nginx-lab-upstream.sh" "automatic upload UI proxy guide"
 require_contains "docs/automatic-upload-exec-handlers.md" "https://<server>/exec/<file>.js" "HTTPS Node execution URL"
 require_contains "docs/automatic-upload-exec-handlers.md" "https://<server>/jsp-exec/<file>.jsp" "HTTPS JSP execution URL"
 require_contains "docs/automatic-upload-exec-handlers.md" "env: $'node\\r'" "CRLF CGI troubleshooting"
@@ -99,7 +108,7 @@ require_contains "docs/automatic-upload-exec-handlers.md" "openjdk-21-jdk" "Tomc
 require_contains "docs/automatic-upload-exec-handlers.md" "/var/lib/tomcat10/conf/Catalina/localhost/webshell-lab-jsp.xml" "Tomcat 10 JSP context path"
 require_contains "README.md" "LAB_AUTO_EXEC_HANDLER=1" "README automatic handler usage"
 require_contains "README.md" "setup-nginx-exec-proxy.sh" "README HTTPS proxy usage"
-require_contains "README.md" "LAB_AUTO_NGINX_UPSTREAM" "README automatic Nginx upstream usage"
+require_contains "README.md" "LAB_AUTO_NGINX_UPSTREAM" "README automatic Nginx upload UI usage"
 
 if [ "$failures" -gt 0 ]; then
   printf '\nUpload executable config check failed with %s issue(s).\n' "$failures" >&2
