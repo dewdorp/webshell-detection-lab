@@ -5,11 +5,13 @@
 `LAB_AUTO_EXEC_HANDLER=1` updates the external script execution handler when you switch runtimes. For HTTPS-only testing, keep the execution handlers on loopback and expose them through Nginx:
 
 ```text
-https://<server>/exec/<file>.php  -> http://127.0.0.1:18080/uploads/<file>.php
-https://<server>/exec/<file>.js   -> http://127.0.0.1:18080/uploads/<file>.js
-https://<server>/exec/<file>.py   -> http://127.0.0.1:18080/uploads/<file>.py
-https://<server>/jsp-exec/<file>.jsp -> http://127.0.0.1:8080/webshell-lab-jsp/<file>.jsp
+https://<server>/exec/<file>.php      -> http://127.0.0.1:18080/uploads/<file>.php
+https://<server>/exec/<file>.js       -> http://127.0.0.1:18080/uploads/<file>.js
+https://<server>/exec/<file>.py       -> http://127.0.0.1:18080/uploads/<file>.py
+https://<server>/jsp-exec/<file>.jsp  -> http://127.0.0.1:8080/webshell-lab-jsp/<file>.jsp
 ```
+
+The lab does not provide webshell samples, command execution handlers, or exploit payloads. Use only benign test files in an authorized lab network.
 
 ### Prerequisites
 
@@ -19,10 +21,19 @@ sudo apt install -y apache2 libapache2-mod-php nodejs python3 nginx certbot pyth
 sudo a2enmod cgi
 ```
 
-For JSP:
+For JSP on current Ubuntu/Tomcat 10 systems, install Tomcat and Java 21:
 
 ```bash
-sudo apt install -y tomcat9
+sudo apt install -y tomcat10 openjdk-21-jdk
+```
+
+If Tomcat was already installed with an older Java runtime, set Java 21 for the service:
+
+```bash
+sudo mkdir -p /etc/systemd/system/tomcat10.service.d
+printf '[Service]\nEnvironment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"\n' | sudo tee /etc/systemd/system/tomcat10.service.d/override.conf
+sudo systemctl daemon-reload
+sudo systemctl restart tomcat10
 ```
 
 ### One-Time HTTPS Proxy Setup
@@ -69,7 +80,13 @@ LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 https://<server>/jsp-exec/<file>.jsp
 ```
 
-`LAB_PORT=8088` avoids a conflict when the system Tomcat service uses `8080`.
+`LAB_PORT=8088` avoids a conflict when the system Tomcat service uses `8080`. The JSP execution context is served by the system Tomcat service, usually through:
+
+```text
+/var/lib/tomcat10/conf/Catalina/localhost/webshell-lab-jsp.xml
+```
+
+Tomcat 10 does not support `reload` as a systemd job type, so the setup script restarts Tomcat after creating or removing this context.
 
 ### Apache Binding
 
@@ -82,12 +99,14 @@ LAB_EXEC_HANDLER_PORT=18080
 
 That means direct external HTTP access to `:18080` is not required. Open only HTTPS `443` to trusted tester IP ranges.
 
+If Apache fails with `Address already in use` for `:80`, another service such as Nginx is already using the public HTTP port. The execution handler should stay on `127.0.0.1:18080`; do not add a public Apache `Listen 80` for the handler.
+
 ### CGI Sample Format
 
-Node.js CGI files need a Node shebang and an HTTP header:
+Node.js CGI files need a Node shebang and an HTTP header. On some Apache CGI environments, Node/V8 can fail while allocating executable memory. Use `--jitless` for a stable benign CGI smoke test:
 
 ```js
-#!/usr/bin/env node
+#!/usr/bin/env -S node --jitless
 console.log("Content-Type: text/plain\n");
 console.log("node cgi ok");
 ```
@@ -114,8 +133,6 @@ sudo tail -n 80 /var/log/apache2/webshell-lab-exec-node-error.log
 sudo tail -n 80 /var/log/apache2/error.log
 ```
 
-The lab does not provide webshell samples, command execution handlers, or exploit payloads.
-
 ### ASP.NET Core
 
 Linux ASP.NET Core does not execute uploaded `.cs`, `.cshtml`, `.asp`, or `.aspx` files as scripts. In this mode, the script disables the Apache/Tomcat lab execution handlers and prints a note. Use a separate Windows IIS lab for classic ASP or ASP.NET WebForms upload execution.
@@ -125,11 +142,13 @@ Linux ASP.NET Core does not execute uploaded `.cs`, `.cshtml`, `.asp`, or `.aspx
 `LAB_AUTO_EXEC_HANDLER=1`은 런타임을 전환할 때 외부 스크립트 실행 핸들러를 함께 갱신합니다. HTTPS만 사용하려면 실행 핸들러는 loopback에만 열고 Nginx가 HTTPS로 프록시하게 구성합니다.
 
 ```text
-https://<server>/exec/<file>.php  -> http://127.0.0.1:18080/uploads/<file>.php
-https://<server>/exec/<file>.js   -> http://127.0.0.1:18080/uploads/<file>.js
-https://<server>/exec/<file>.py   -> http://127.0.0.1:18080/uploads/<file>.py
-https://<server>/jsp-exec/<file>.jsp -> http://127.0.0.1:8080/webshell-lab-jsp/<file>.jsp
+https://<server>/exec/<file>.php      -> http://127.0.0.1:18080/uploads/<file>.php
+https://<server>/exec/<file>.js       -> http://127.0.0.1:18080/uploads/<file>.js
+https://<server>/exec/<file>.py       -> http://127.0.0.1:18080/uploads/<file>.py
+https://<server>/jsp-exec/<file>.jsp  -> http://127.0.0.1:8080/webshell-lab-jsp/<file>.jsp
 ```
+
+이 랩은 웹쉘 샘플, 명령 실행 핸들러, 공격 페이로드를 제공하지 않습니다. 인가된 테스트 네트워크에서 정상 동작 확인용 파일만 사용하세요.
 
 ### 사전 준비
 
@@ -139,10 +158,19 @@ sudo apt install -y apache2 libapache2-mod-php nodejs python3 nginx certbot pyth
 sudo a2enmod cgi
 ```
 
-JSP는 Tomcat이 필요합니다.
+JSP는 Tomcat과 Java 21이 필요합니다.
 
 ```bash
-sudo apt install -y tomcat9
+sudo apt install -y tomcat10 openjdk-21-jdk
+```
+
+기존 Tomcat이 Java 17 등으로 실행 중이면 서비스에 Java 21을 지정하세요.
+
+```bash
+sudo mkdir -p /etc/systemd/system/tomcat10.service.d
+printf '[Service]\nEnvironment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64"\n' | sudo tee /etc/systemd/system/tomcat10.service.d/override.conf
+sudo systemctl daemon-reload
+sudo systemctl restart tomcat10
 ```
 
 ### HTTPS 프록시 1회 설정
@@ -187,7 +215,13 @@ LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 https://<server>/jsp-exec/<file>.jsp
 ```
 
-시스템 Tomcat이 `8080`을 쓰는 경우 embedded JSP 랩 서버는 `LAB_PORT=8088`로 피해서 실행하세요.
+시스템 Tomcat이 `8080`을 쓰는 경우 embedded JSP 랩 서버는 `LAB_PORT=8088`로 피해서 실행하세요. JSP 실행 컨텍스트는 보통 아래 파일로 시스템 Tomcat에 연결됩니다.
+
+```text
+/var/lib/tomcat10/conf/Catalina/localhost/webshell-lab-jsp.xml
+```
+
+Tomcat 10은 systemd `reload` 작업을 지원하지 않으므로, 설정 스크립트는 컨텍스트 생성/삭제 후 Tomcat을 재시작합니다.
 
 ### 방화벽
 
@@ -198,9 +232,27 @@ LAB_EXEC_HANDLER_HOST=127.0.0.1
 LAB_EXEC_HANDLER_PORT=18080
 ```
 
-따라서 외부에는 `18080`을 열 필요가 없습니다. 테스트 IP에 대해 HTTPS `443`만 허용하는 구성을 권장합니다.
+따라서 외부에 `18080`을 열 필요가 없습니다. 테스트 IP에 대해 HTTPS `443`만 허용하는 구성을 권장합니다.
 
-### CGI 500 오류 확인
+Apache 로그에 `Address already in use`와 `:80` 바인딩 오류가 나오면 Nginx 같은 기존 웹 서버가 이미 공인 HTTP 포트를 사용 중인 상태입니다. 실행 핸들러는 `127.0.0.1:18080`에만 두고, 공인 `Listen 80`을 추가하지 마세요.
+
+### CGI 샘플 형식
+
+Node.js CGI 파일은 Node shebang과 HTTP 헤더가 필요합니다. 일부 Apache CGI 환경에서는 Node/V8의 실행 메모리 할당 때문에 500 오류가 날 수 있으므로, 정상 동작 확인용 benign 샘플은 `--jitless`를 사용하세요.
+
+```js
+#!/usr/bin/env -S node --jitless
+console.log("Content-Type: text/plain\n");
+console.log("node cgi ok");
+```
+
+Python CGI 파일은 Python shebang과 HTTP 헤더가 필요합니다.
+
+```python
+#!/usr/bin/env python3
+print("Content-Type: text/plain\n")
+print("python cgi ok")
+```
 
 Apache 로그에 `env: $'node\r': No such file or directory`가 나오면 업로드한 파일이 Windows CRLF 줄바꿈입니다. LF로 변환하세요.
 
