@@ -35,6 +35,7 @@ server {
     server_name $DOMAIN;
 
     client_max_body_size 100m;
+    include /etc/nginx/snippets/webshell-lab-exec-proxy*.conf;
 
     location / {
         proxy_pass http://$LAB_UPSTREAM_HOST:$LAB_UPSTREAM_PORT;
@@ -73,6 +74,9 @@ Nginx and SSL are configured for:
 
 Start the lab server behind Nginx with:
   LAB_HOST=$LAB_UPSTREAM_HOST LAB_PORT=$LAB_UPSTREAM_PORT ./scripts/switch-server.sh node
+
+Optional HTTPS upload execution proxy:
+  sudo DOMAIN=$DOMAIN ./scripts/setup-nginx-exec-proxy.sh
 
 Recommended firewall:
   allow TCP 80 from the internet for ACME HTTP-01 validation and HTTP redirect
