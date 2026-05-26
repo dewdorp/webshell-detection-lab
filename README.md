@@ -76,7 +76,22 @@ LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 ```
 
-`LAB_AUTO_EXEC_HANDLER=1` also enables executable upload permissions if `LAB_UPLOAD_EXECUTABLE` is not already set. Apache-backed handlers use `LAB_EXEC_HANDLER_PORT`, defaulting to `18080`.
+`LAB_AUTO_EXEC_HANDLER=1` also enables executable upload permissions if `LAB_UPLOAD_EXECUTABLE` is not already set. Apache-backed handlers bind to `127.0.0.1:18080` by default.
+
+For HTTPS-only access through Nginx, configure the execution proxy once:
+
+```bash
+sudo DOMAIN=test.secutrace.co.kr ./scripts/setup-nginx-exec-proxy.sh
+```
+
+Then use:
+
+```text
+https://test.secutrace.co.kr/exec/<file>.php
+https://test.secutrace.co.kr/exec/<file>.js
+https://test.secutrace.co.kr/exec/<file>.py
+https://test.secutrace.co.kr/jsp-exec/<file>.jsp
+```
 
 See:
 
