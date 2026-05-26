@@ -36,18 +36,6 @@ sudo DOMAIN=test.secutrace.co.kr ./scripts/setup-nginx-exec-proxy.sh
 
 The script writes `/etc/nginx/snippets/webshell-lab-exec-proxy.conf`, adds an include to `/etc/nginx/sites-available/webshell-detection-lab`, validates Nginx, and reloads it.
 
-Custom paths and ports:
-
-```bash
-sudo DOMAIN=test.secutrace.co.kr \
-  LAB_EXEC_HANDLER_PORT=18080 \
-  LAB_EXEC_PROXY_PREFIX=/exec/ \
-  LAB_JSP_EXEC_PROXY_PREFIX=/jsp-exec/ \
-  LAB_TOMCAT_UPSTREAM_PORT=8080 \
-  LAB_TOMCAT_CONTEXT_NAME=webshell-lab-jsp \
-  ./scripts/setup-nginx-exec-proxy.sh
-```
-
 ### Runtime Switching
 
 PHP:
@@ -55,8 +43,6 @@ PHP:
 ```bash
 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh php
 ```
-
-External HTTPS URL:
 
 ```text
 https://<server>/exec/<file>.php
@@ -67,8 +53,6 @@ Node.js and Python CGI:
 ```bash
 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
 ```
-
-External HTTPS URLs:
 
 ```text
 https://<server>/exec/<file>.js
@@ -81,8 +65,6 @@ JSP:
 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 ```
 
-External HTTPS URL:
-
 ```text
 https://<server>/jsp-exec/<file>.jsp
 ```
@@ -91,18 +73,14 @@ https://<server>/jsp-exec/<file>.jsp
 
 ### Apache Binding
 
-Apache-backed execution handlers now bind to loopback by default:
+Apache-backed execution handlers bind to loopback by default:
 
 ```text
 LAB_EXEC_HANDLER_HOST=127.0.0.1
 LAB_EXEC_HANDLER_PORT=18080
 ```
 
-That means direct external HTTP access to `:18080` is not required. Open only HTTPS `443` to trusted tester IP ranges. If you intentionally need direct HTTP for troubleshooting, override the bind host:
-
-```bash
-LAB_EXEC_HANDLER_HOST=0.0.0.0 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
-```
+That means direct external HTTP access to `:18080` is not required. Open only HTTPS `443` to trusted tester IP ranges.
 
 ### CGI Sample Format
 
@@ -120,6 +98,20 @@ Python CGI files need a Python shebang and an HTTP header:
 #!/usr/bin/env python3
 print("Content-Type: text/plain\n")
 print("python cgi ok")
+```
+
+If Apache returns `500` and the log contains `env: $'node\r': No such file or directory`, the uploaded file has Windows CRLF line endings. Convert it to LF:
+
+```bash
+sudo sed -i 's/\r$//' /opt/webshell-detection-lab/servers/node-express/uploads/test.js
+curl -v http://127.0.0.1:18080/uploads/test.js
+```
+
+Check the CGI error log:
+
+```bash
+sudo tail -n 80 /var/log/apache2/webshell-lab-exec-node-error.log
+sudo tail -n 80 /var/log/apache2/error.log
 ```
 
 The lab does not provide webshell samples, command execution handlers, or exploit payloads.
@@ -161,8 +153,6 @@ sudo apt install -y tomcat9
 cd /opt/webshell-detection-lab
 sudo DOMAIN=test.secutrace.co.kr ./scripts/setup-nginx-exec-proxy.sh
 ```
-
-스크립트는 `/etc/nginx/snippets/webshell-lab-exec-proxy.conf`를 만들고 `/etc/nginx/sites-available/webshell-detection-lab`에 include를 추가한 뒤 Nginx 설정 검증과 reload를 수행합니다.
 
 ### 런타임 전환
 
@@ -209,3 +199,19 @@ LAB_EXEC_HANDLER_PORT=18080
 ```
 
 따라서 외부에는 `18080`을 열 필요가 없습니다. 테스트 IP에 대해 HTTPS `443`만 허용하는 구성을 권장합니다.
+
+### CGI 500 오류 확인
+
+Apache 로그에 `env: $'node\r': No such file or directory`가 나오면 업로드한 파일이 Windows CRLF 줄바꿈입니다. LF로 변환하세요.
+
+```bash
+sudo sed -i 's/\r$//' /opt/webshell-detection-lab/servers/node-express/uploads/test.js
+curl -v http://127.0.0.1:18080/uploads/test.js
+```
+
+오류 로그 확인:
+
+```bash
+sudo tail -n 80 /var/log/apache2/webshell-lab-exec-node-error.log
+sudo tail -n 80 /var/log/apache2/error.log
+```
