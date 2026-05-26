@@ -10,7 +10,7 @@ APACHE_SITE_DIR="${APACHE_SITE_DIR:-/etc/apache2/sites-available}"
 APACHE_ENABLED_DIR="${APACHE_ENABLED_DIR:-/etc/apache2/sites-enabled}"
 TOMCAT_CONTEXT_NAME="${LAB_TOMCAT_CONTEXT_NAME:-webshell-lab-jsp}"
 TOMCAT_CONTEXT_FILE="${LAB_TOMCAT_CONTEXT_FILE:-}"
-TOMCAT_SERVICE="${LAB_TOMCAT_SERVICE:-}"
+TOMCAT_SERVICE="${TOMCAT_SERVICE:-${LAB_TOMCAT_SERVICE:-}}"
 
 usage() {
   printf 'Usage: LAB_AUTO_EXEC_HANDLER=1 %s php|node|jsp|aspnet\n' "$0" >&2
@@ -39,15 +39,6 @@ write_root_file() {
   as_root mkdir -p "$(dirname "$target")"
   as_root install -m 0644 "$tmp" "$target"
   rm -f "$tmp"
-}
-
-need_command() {
-  local command_name="$1"
-  local help_text="$2"
-  if ! command -v "$command_name" >/dev/null 2>&1; then
-    printf 'Missing required command: %s\n%s\n' "$command_name" "$help_text" >&2
-    exit 1
-  fi
 }
 
 systemd_service_exists() {
@@ -115,6 +106,7 @@ write_apache_site() {
   local document_root="$2"
   local upload_dir="$3"
   local handler_block="$4"
+  local fallback_resource="${5:-}"
 
   write_root_file "$APACHE_SITE_DIR/$site.conf" <<CONF
 Listen $LAB_EXEC_HANDLER_HOST:$LAB_EXEC_HANDLER_PORT
@@ -128,7 +120,7 @@ Listen $LAB_EXEC_HANDLER_HOST:$LAB_EXEC_HANDLER_PORT
         AllowOverride None
         Options -Indexes +FollowSymLinks
         DirectoryIndex index.php index.html
-        FallbackResource /index.php
+$fallback_resource
     </Directory>
 
     <Directory $upload_dir>
@@ -154,8 +146,9 @@ configure_php() {
         <FilesMatch "\.php$">
             SetHandler application/x-httpd-php
         </FilesMatch>'
+  local fallback_resource='        FallbackResource /index.php'
 
-  write_apache_site "webshell-lab-exec-php" "$document_root" "$upload_dir" "$handler_block"
+  write_apache_site "webshell-lab-exec-php" "$document_root" "$upload_dir" "$handler_block" "$fallback_resource"
   as_root a2ensite webshell-lab-exec-php.conf >/dev/null
   reload_apache
 
@@ -173,7 +166,7 @@ configure_node() {
   local handler_block='        Options +ExecCGI -Indexes +FollowSymLinks
         AddHandler cgi-script .js .py'
 
-  write_apache_site "webshell-lab-exec-node" "$document_root" "$upload_dir" "$handler_block"
+  write_apache_site "webshell-lab-exec-node" "$document_root" "$upload_dir" "$handler_block" ""
   as_root a2ensite webshell-lab-exec-node.conf >/dev/null
   reload_apache
 
@@ -191,7 +184,7 @@ configure_python() {
   local handler_block='        Options +ExecCGI -Indexes +FollowSymLinks
         AddHandler cgi-script .py'
 
-  write_apache_site "webshell-lab-exec-python" "$document_root" "$upload_dir" "$handler_block"
+  write_apache_site "webshell-lab-exec-python" "$document_root" "$upload_dir" "$handler_block" ""
   as_root a2ensite webshell-lab-exec-python.conf >/dev/null
   reload_apache
 
