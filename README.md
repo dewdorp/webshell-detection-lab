@@ -1,6 +1,6 @@
 # Webshell Detection Lab
 
-SecuTrace-style multi-runtime web application with a separate vulnerable upload page for validating a file-system monitoring webshell detection Agent.
+SecuTrace-style multi-runtime web application with a vulnerable upload page for validating a file-system monitoring webshell detection Agent.
 
 This is a separate project and does not modify the original `dewdorp/Webserver` app.
 
@@ -10,12 +10,6 @@ Use the integrated Korean and English guide:
 
 ```text
 docs/guide.md
-```
-
-GitHub URL:
-
-```text
-https://github.com/dewdorp/webshell-detection-lab/blob/test/docs/guide.md
 ```
 
 Additional lab execution guides:
@@ -60,11 +54,24 @@ LAB_UPLOAD_EXECUTABLE=1 ./scripts/switch-server.sh php
 
 This sets runtime upload directories and newly uploaded files to `0775`. The option only changes file-system permissions. Script execution still requires the matching server-side handler, such as Apache/PHP-FPM, Tomcat/JSP, Node, Python, or another runtime configured for the upload path.
 
-Reset uploads while preserving the same executable permission mode:
+## Runtime Switching Behind Nginx
+
+When `/etc/nginx/sites-available/webshell-detection-lab` exists, `switch-server.sh` updates the Nginx root upstream to the active lab portal by default:
+
+```text
+https://<domain>/            -> active lab portal
+https://<domain>/upload.html -> active lab upload page
+```
+
+Use the same public portal URL while switching runtimes:
 
 ```bash
-LAB_UPLOAD_EXECUTABLE=1 ./scripts/reset-uploads.sh
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh node
+LAB_HOST=127.0.0.1 LAB_PORT=8080 ./scripts/switch-server.sh php
+LAB_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 ```
+
+JSP uses `8088` for the lab portal because the system Tomcat service commonly owns `8080` for uploaded JSP execution. Disable only the Nginx root upstream update with `LAB_AUTO_NGINX_UPSTREAM=0`.
 
 ## Automatic Upload Execution Handlers
 
@@ -77,14 +84,6 @@ LAB_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server
 ```
 
 `LAB_AUTO_EXEC_HANDLER=1` also enables executable upload permissions if `LAB_UPLOAD_EXECUTABLE` is not already set. Apache-backed handlers bind to `127.0.0.1:18080` by default.
-
-When `/etc/nginx/sites-available/webshell-detection-lab` exists, the same switch command also refreshes an isolated upload UI proxy through `scripts/update-nginx-lab-upstream.sh`. It preserves the original website at `https://<domain>/` and exposes the lab upload UI at:
-
-```text
-https://<domain>/lab-upload/upload.html
-```
-
-For compatibility, `https://<domain>/upload.html` redirects to `/lab-upload/upload.html`. Disable that behavior with `LAB_AUTO_NGINX_UPSTREAM=0`.
 
 For HTTPS-only execution testing through Nginx, configure the execution proxy once:
 
