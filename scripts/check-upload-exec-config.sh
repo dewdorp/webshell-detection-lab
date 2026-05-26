@@ -31,6 +31,7 @@ require_contains "scripts/upload-permissions.sh" "chmod 0775" "0775 permission a
 
 require_file "scripts/setup-upload-exec-handler.sh"
 require_contains "scripts/setup-upload-exec-handler.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
+require_contains "scripts/setup-upload-exec-handler.sh" "LAB_EXEC_HANDLER_HOST" "loopback execution handler bind host"
 require_contains "scripts/setup-upload-exec-handler.sh" "configure_php" "PHP handler setup"
 require_contains "scripts/setup-upload-exec-handler.sh" "configure_node" "Node CGI handler setup"
 require_contains "scripts/setup-upload-exec-handler.sh" "configure_jsp" "JSP Tomcat handler setup"
@@ -40,6 +41,14 @@ require_contains "scripts/setup-upload-exec-handler.sh" "LAB_EXEC_HANDLER_PORT" 
 require_contains "scripts/setup-upload-exec-handler.sh" "systemd_service_exists" "reliable systemd service detection"
 require_contains "scripts/setup-upload-exec-handler.sh" "print_apache_failure_help" "Apache startup diagnostics"
 require_contains "scripts/setup-upload-exec-handler.sh" "No Tomcat service was found" "Tomcat missing-service diagnostic"
+
+require_file "scripts/setup-nginx-exec-proxy.sh"
+require_contains "scripts/setup-nginx-exec-proxy.sh" "LAB_EXEC_PROXY_PREFIX" "HTTPS exec proxy prefix"
+require_contains "scripts/setup-nginx-exec-proxy.sh" "LAB_JSP_EXEC_PROXY_PREFIX" "HTTPS JSP proxy prefix"
+require_contains "scripts/setup-nginx-exec-proxy.sh" "webshell-lab-exec-proxy.conf" "Nginx exec proxy snippet"
+require_contains "scripts/setup-nginx-exec-proxy.sh" "proxy_pass http://127.0.0.1:$LAB_EXEC_HANDLER_PORT/uploads/" "Apache exec proxy upstream"
+require_contains "scripts/setup-nginx-exec-proxy.sh" "proxy_pass http://$LAB_TOMCAT_UPSTREAM_HOST:$LAB_TOMCAT_UPSTREAM_PORT/$LAB_TOMCAT_CONTEXT_NAME/" "Tomcat JSP proxy upstream"
+require_contains "scripts/setup-nginx-ssl.sh" "webshell-lab-exec-proxy*.conf" "optional Nginx exec proxy include"
 
 require_contains "scripts/switch-server.sh" "LAB_AUTO_EXEC_HANDLER" "the automatic handler toggle"
 require_contains "scripts/switch-server.sh" "LAB_UPLOAD_EXECUTABLE=1" "automatic executable permission enablement"
@@ -63,7 +72,11 @@ require_contains "servers/aspnet-core/Program.cs" "File.SetUnixFileMode(path" "u
 
 require_file "docs/automatic-upload-exec-handlers.md"
 require_contains "docs/automatic-upload-exec-handlers.md" "LAB_AUTO_EXEC_HANDLER=1" "automatic handler guide"
+require_contains "docs/automatic-upload-exec-handlers.md" "setup-nginx-exec-proxy.sh" "HTTPS proxy guide"
+require_contains "docs/automatic-upload-exec-handlers.md" "https://<server>/exec/<file>.js" "HTTPS Node execution URL"
+require_contains "docs/automatic-upload-exec-handlers.md" "https://<server>/jsp-exec/<file>.jsp" "HTTPS JSP execution URL"
 require_contains "README.md" "LAB_AUTO_EXEC_HANDLER=1" "README automatic handler usage"
+require_contains "README.md" "setup-nginx-exec-proxy.sh" "README HTTPS proxy usage"
 
 if [ "$failures" -gt 0 ]; then
   printf '\nUpload executable config check failed with %s issue(s).\n' "$failures" >&2
