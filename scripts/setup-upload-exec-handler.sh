@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME="${1:-}"
 LAB_DOMAIN="${LAB_DOMAIN:-${DOMAIN:-secutrace.co.kr}}"
+LAB_EXEC_HANDLER_HOST="${LAB_EXEC_HANDLER_HOST:-127.0.0.1}"
 LAB_EXEC_HANDLER_PORT="${LAB_EXEC_HANDLER_PORT:-18080}"
 APACHE_SITE_DIR="${APACHE_SITE_DIR:-/etc/apache2/sites-available}"
 APACHE_ENABLED_DIR="${APACHE_ENABLED_DIR:-/etc/apache2/sites-enabled}"
@@ -116,9 +117,9 @@ write_apache_site() {
   local handler_block="$4"
 
   write_root_file "$APACHE_SITE_DIR/$site.conf" <<CONF
-Listen $LAB_EXEC_HANDLER_PORT
+Listen $LAB_EXEC_HANDLER_HOST:$LAB_EXEC_HANDLER_PORT
 
-<VirtualHost *:$LAB_EXEC_HANDLER_PORT>
+<VirtualHost $LAB_EXEC_HANDLER_HOST:$LAB_EXEC_HANDLER_PORT>
     ServerName $LAB_DOMAIN
     DocumentRoot $document_root
 
@@ -158,7 +159,7 @@ configure_php() {
   as_root a2ensite webshell-lab-exec-php.conf >/dev/null
   reload_apache
 
-  printf 'PHP upload execution handler enabled at http://%s:%s/uploads/<file>.php\n' "$LAB_DOMAIN" "$LAB_EXEC_HANDLER_PORT"
+  printf 'PHP upload execution handler enabled internally at http://%s:%s/uploads/<file>.php\n' "$LAB_EXEC_HANDLER_HOST" "$LAB_EXEC_HANDLER_PORT"
 }
 
 configure_node() {
@@ -176,7 +177,7 @@ configure_node() {
   as_root a2ensite webshell-lab-exec-node.conf >/dev/null
   reload_apache
 
-  printf 'Node/Python CGI upload execution handler enabled at http://%s:%s/uploads/<file>.js or .py\n' "$LAB_DOMAIN" "$LAB_EXEC_HANDLER_PORT"
+  printf 'Node/Python CGI upload execution handler enabled internally at http://%s:%s/uploads/<file>.js or .py\n' "$LAB_EXEC_HANDLER_HOST" "$LAB_EXEC_HANDLER_PORT"
 }
 
 configure_python() {
@@ -194,7 +195,7 @@ configure_python() {
   as_root a2ensite webshell-lab-exec-python.conf >/dev/null
   reload_apache
 
-  printf 'Python CGI upload execution handler enabled at http://%s:%s/uploads/<file>.py\n' "$LAB_DOMAIN" "$LAB_EXEC_HANDLER_PORT"
+  printf 'Python CGI upload execution handler enabled internally at http://%s:%s/uploads/<file>.py\n' "$LAB_EXEC_HANDLER_HOST" "$LAB_EXEC_HANDLER_PORT"
 }
 
 find_tomcat_context_file() {
