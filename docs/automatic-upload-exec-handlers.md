@@ -2,9 +2,12 @@
 
 ## English
 
-`LAB_AUTO_EXEC_HANDLER=1` updates the external script execution handler when you switch runtimes. For HTTPS-only testing, keep the execution handlers on loopback and expose them through Nginx:
+`LAB_AUTO_EXEC_HANDLER=1` updates the external script execution handler when you switch runtimes. If the Nginx site config exists, it also updates the main upload-page upstream so `https://<server>/upload.html` follows the active runtime.
+
+For HTTPS-only testing, keep the execution handlers on loopback and expose them through Nginx:
 
 ```text
+https://<server>/upload.html          -> active lab runtime, for example http://127.0.0.1:8088/upload.html
 https://<server>/exec/<file>.php      -> http://127.0.0.1:18080/uploads/<file>.php
 https://<server>/exec/<file>.js       -> http://127.0.0.1:18080/uploads/<file>.js
 https://<server>/exec/<file>.py       -> http://127.0.0.1:18080/uploads/<file>.py
@@ -56,6 +59,7 @@ LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh php
 ```
 
 ```text
+https://<server>/upload.html
 https://<server>/exec/<file>.php
 ```
 
@@ -66,6 +70,7 @@ LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
 ```
 
 ```text
+https://<server>/upload.html
 https://<server>/exec/<file>.js
 https://<server>/exec/<file>.py
 ```
@@ -73,20 +78,49 @@ https://<server>/exec/<file>.py
 JSP:
 
 ```bash
-LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+LAB_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 ```
 
 ```text
+https://<server>/upload.html
 https://<server>/jsp-exec/<file>.jsp
 ```
 
-`LAB_PORT=8088` avoids a conflict when the system Tomcat service uses `8080`. The JSP execution context is served by the system Tomcat service, usually through:
+`LAB_PORT=8088` avoids a conflict when the system Tomcat service uses `8080`. The upload page is served by the embedded lab runtime on `8088`; uploaded JSP execution is served separately by the system Tomcat service on `8080` through:
 
 ```text
 /var/lib/tomcat10/conf/Catalina/localhost/webshell-lab-jsp.xml
 ```
 
 Tomcat 10 does not support `reload` as a systemd job type, so the setup script restarts Tomcat after creating or removing this context.
+
+### Automatic Nginx Upload Page Upstream
+
+When `LAB_AUTO_EXEC_HANDLER=1` is enabled, `switch-server.sh` also calls:
+
+```bash
+scripts/update-nginx-lab-upstream.sh
+```
+
+That script updates the root `location /` proxy in `/etc/nginx/sites-available/webshell-detection-lab` to the current `LAB_HOST:LAB_PORT`, validates with `nginx -t`, and reloads Nginx. This is what keeps `https://<server>/upload.html` pointing at the newly selected upload UI after every switch.
+
+If you need to run the upload server on `0.0.0.0`, the Nginx upstream is normalized to `127.0.0.1`. Override it explicitly with:
+
+```bash
+LAB_NGINX_UPSTREAM_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+```
+
+Disable only the Nginx upload-page upstream update with:
+
+```bash
+LAB_AUTO_NGINX_UPSTREAM=0 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
+```
+
+Manual update:
+
+```bash
+sudo LAB_UPSTREAM_HOST=127.0.0.1 LAB_UPSTREAM_PORT=8088 ./scripts/update-nginx-lab-upstream.sh
+```
 
 ### Apache Binding
 
@@ -139,9 +173,12 @@ Linux ASP.NET Core does not execute uploaded `.cs`, `.cshtml`, `.asp`, or `.aspx
 
 ## 한국어
 
-`LAB_AUTO_EXEC_HANDLER=1`은 런타임을 전환할 때 외부 스크립트 실행 핸들러를 함께 갱신합니다. HTTPS만 사용하려면 실행 핸들러는 loopback에만 열고 Nginx가 HTTPS로 프록시하게 구성합니다.
+`LAB_AUTO_EXEC_HANDLER=1`은 런타임을 전환할 때 외부 스크립트 실행 핸들러를 함께 갱신합니다. Nginx 사이트 설정이 있으면 메인 업로드 페이지 upstream도 함께 바꿔서 `https://<server>/upload.html`이 현재 선택된 런타임을 바라보게 합니다.
+
+HTTPS만 사용하려면 실행 핸들러는 loopback에만 열고 Nginx가 HTTPS로 프록시하게 구성합니다.
 
 ```text
+https://<server>/upload.html          -> 현재 랩 런타임, 예: http://127.0.0.1:8088/upload.html
 https://<server>/exec/<file>.php      -> http://127.0.0.1:18080/uploads/<file>.php
 https://<server>/exec/<file>.js       -> http://127.0.0.1:18080/uploads/<file>.js
 https://<server>/exec/<file>.py       -> http://127.0.0.1:18080/uploads/<file>.py
@@ -191,6 +228,7 @@ LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh php
 ```
 
 ```text
+https://<server>/upload.html
 https://<server>/exec/<file>.php
 ```
 
@@ -201,6 +239,7 @@ LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
 ```
 
 ```text
+https://<server>/upload.html
 https://<server>/exec/<file>.js
 https://<server>/exec/<file>.py
 ```
@@ -208,20 +247,49 @@ https://<server>/exec/<file>.py
 JSP:
 
 ```bash
-LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+LAB_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
 ```
 
 ```text
+https://<server>/upload.html
 https://<server>/jsp-exec/<file>.jsp
 ```
 
-시스템 Tomcat이 `8080`을 쓰는 경우 embedded JSP 랩 서버는 `LAB_PORT=8088`로 피해서 실행하세요. JSP 실행 컨텍스트는 보통 아래 파일로 시스템 Tomcat에 연결됩니다.
+시스템 Tomcat이 `8080`을 쓰는 경우 embedded JSP 랩 서버는 `LAB_PORT=8088`로 피해서 실행하세요. 업로드 페이지는 `8088`의 랩 런타임이 제공하고, 업로드된 JSP 실행은 시스템 Tomcat `8080`이 아래 컨텍스트로 제공합니다.
 
 ```text
 /var/lib/tomcat10/conf/Catalina/localhost/webshell-lab-jsp.xml
 ```
 
 Tomcat 10은 systemd `reload` 작업을 지원하지 않으므로, 설정 스크립트는 컨텍스트 생성/삭제 후 Tomcat을 재시작합니다.
+
+### Nginx 업로드 페이지 upstream 자동 전환
+
+`LAB_AUTO_EXEC_HANDLER=1`이 켜져 있으면 `switch-server.sh`가 아래 스크립트도 함께 호출합니다.
+
+```bash
+scripts/update-nginx-lab-upstream.sh
+```
+
+이 스크립트는 `/etc/nginx/sites-available/webshell-detection-lab`의 root `location /` 프록시를 현재 `LAB_HOST:LAB_PORT`로 바꾸고, `nginx -t` 검증 후 Nginx를 reload합니다. 그래서 런타임을 바꿀 때마다 `https://<server>/upload.html`이 새 업로드 UI를 바라보게 됩니다.
+
+업로드 서버를 `0.0.0.0`으로 실행해도 Nginx upstream은 `127.0.0.1`로 정규화됩니다. 명시적으로 바꾸려면 이렇게 실행하세요.
+
+```bash
+LAB_NGINX_UPSTREAM_HOST=127.0.0.1 LAB_PORT=8088 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh jsp
+```
+
+Nginx 업로드 페이지 upstream 자동 변경만 끄려면:
+
+```bash
+LAB_AUTO_NGINX_UPSTREAM=0 LAB_AUTO_EXEC_HANDLER=1 ./scripts/switch-server.sh node
+```
+
+수동 변경:
+
+```bash
+sudo LAB_UPSTREAM_HOST=127.0.0.1 LAB_UPSTREAM_PORT=8088 ./scripts/update-nginx-lab-upstream.sh
+```
 
 ### 방화벽
 
