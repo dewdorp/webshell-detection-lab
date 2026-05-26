@@ -46,6 +46,95 @@ require_command() {
   fi
 }
 
+port_pids() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
+    return
+  fi
+  if command -v fuser >/dev/null 2>&1; then
+    fuser "$port"/tcp 2>/dev/null || true
+    return
+  fi
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnp "sport = :$port" 2>/dev/null | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' || true
+  fi
+}
+
+pid_command() {
+  local pid="$1"
+  ps -p "$pid" -o args= 2>/dev/null || true
+}
+
+stop_pid() {
+  local label="$1"
+  local pid="$2"
+  if [ -z "$pid" ] || ! kill -0 "$pid" >/dev/null 2>&1; then
+    return
+  fi
+  printf 'Stopping %s with PID %s\n' "$label" "$pid"
+  if [ "$(id -u)" -eq 0 ]; then
+    kill "$pid" >/dev/null 2>&1 || true
+  else
+    kill "$pid" >/dev/null 2>&1 || sudo kill "$pid" >/dev/null 2>&1 || true
+  fi
+  sleep 1
+  if kill -0 "$pid" >/dev/null 2>&1; then
+    printf 'Force stopping %s with PID %s\n' "$label" "$pid"
+    if [ "$(id -u)" -eq 0 ]; then
+      kill -9 "$pid" >/dev/null 2>&1 || true
+    else
+      kill -9 "$pid" >/dev/null 2>&1 || sudo kill -9 "$pid" >/dev/null 2>&1 || true
+    fi
+  fi
+}
+
+is_lab_process() {
+  local command_line="$1"
+  case "$command_line" in
+    *"$ROOT_DIR"*|*"node server.js"*|*"php -S"*|*"lab.EmbeddedTomcatServer"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_tomcat_process() {
+  local command_line="$1"
+  case "$command_line" in
+    *tomcat*|*catalina*|*org.apache.catalina.startup.Bootstrap*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+free_tomcat_exec_port_for_jsp() {
+  local tomcat_port="${LAB_TOMCAT_UPSTREAM_PORT:-8080}"
+  local pid command_line blocked=0
+  for pid in $(port_pids "$tomcat_port" | tr ' ' '\n' | sort -u); do
+    command_line="$(pid_command "$pid")"
+    if is_tomcat_process "$command_line"; then
+      continue
+    fi
+    if is_lab_process "$command_line"; then
+      stop_pid "previous lab process on Tomcat JSP execution port $tomcat_port" "$pid"
+      continue
+    fi
+    printf 'Port %s is used by a non-lab process, so Tomcat cannot own JSP execution.\n' "$tomcat_port" >&2
+    printf 'PID %s: %s\n' "$pid" "$command_line" >&2
+    blocked=1
+  done
+  if [ "$blocked" -ne 0 ]; then
+    exit 1
+  fi
+}
+
+prepare_jsp_switch() {
+  local tomcat_port="${LAB_TOMCAT_UPSTREAM_PORT:-8080}"
+  if [ "$LAB_PORT" = "$tomcat_port" ]; then
+    printf 'JSP portal cannot use LAB_PORT=%s because system Tomcat uses it for /jsp-exec/. Using LAB_PORT=8088.\n' "$LAB_PORT" >&2
+    LAB_PORT="${LAB_JSP_PORT:-8088}"
+  fi
+  free_tomcat_exec_port_for_jsp
+}
+
 prepare_upload_dir() {
   local upload_dir="$1"
   bash "$UPLOAD_PERMISSIONS_SCRIPT" prepare-dir "$upload_dir"
@@ -159,6 +248,7 @@ case "$RUNTIME" in
   jsp)
     require_command java "Install a Java runtime."
     require_command mvn "Install Maven."
+    prepare_jsp_switch
     start_server "jsp" "$ROOT_DIR/servers/jsp-tomcat" mvn -q compile exec:java -Dexec.mainClass=lab.EmbeddedTomcatServer -Dlab.port="$LAB_PORT" -Dlab.host="$LAB_HOST"
     ;;
   aspnet)
