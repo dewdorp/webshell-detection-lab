@@ -84,7 +84,7 @@ maybe_update_nginx_upstream() {
   elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
     sudo env LAB_UPSTREAM_HOST="$upstream_host" LAB_UPSTREAM_PORT="$LAB_PORT" bash "$NGINX_UPSTREAM_SCRIPT"
   else
-    printf 'Nginx upload page upstream was not updated because root/sudo is unavailable.\n' >&2
+    printf 'Nginx upload UI proxy was not updated because root/sudo is unavailable.\n' >&2
     printf 'Run: sudo LAB_UPSTREAM_HOST=%s LAB_UPSTREAM_PORT=%s %s\n' "$upstream_host" "$LAB_PORT" "$NGINX_UPSTREAM_SCRIPT" >&2
   fi
 }
@@ -134,7 +134,7 @@ start_server() {
   printf 'Agent watch path: %s\n' "$upload_dir"
   if [ "${LAB_UPLOAD_EXECUTABLE:-0}" != "0" ]; then printf 'Executable upload permissions: enabled via LAB_UPLOAD_EXECUTABLE=%s\n' "${LAB_UPLOAD_EXECUTABLE:-0}"; fi
   if upload_exec_handler_enabled; then printf 'Automatic upload execution handler: enabled via LAB_AUTO_EXEC_HANDLER=%s\n' "${LAB_AUTO_EXEC_HANDLER:-0}"; fi
-  if nginx_upstream_update_enabled; then printf 'Automatic Nginx upload page upstream: enabled for http://%s:%s\n' "$(nginx_upstream_host)" "$LAB_PORT"; fi
+  if nginx_upstream_update_enabled; then printf 'Automatic Nginx upload UI proxy: enabled at /lab-upload/ for http://%s:%s\n' "$(nginx_upstream_host)" "$LAB_PORT"; fi
   if [ -L "$CURRENT_LINK" ]; then printf 'Stable symlink path: %s/uploads\n' "$CURRENT_LINK"; fi
 }
 
