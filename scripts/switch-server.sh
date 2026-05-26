@@ -27,7 +27,7 @@ nginx_upstream_update_enabled() {
   if [ -n "${LAB_AUTO_NGINX_UPSTREAM+x}" ]; then
     truthy "$LAB_AUTO_NGINX_UPSTREAM"
   else
-    upload_exec_handler_enabled
+    return 0
   fi
 }
 
